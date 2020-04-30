@@ -1,0 +1,130 @@
+\documentclass[3p,authoryear]{elsarticle}
+\journal{Annals of Nuclear Energy}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[charter]{mathdesign} % Type-1 Latin Modern modern
+\usepackage[T1]{fontenc}         % Use T1 encoding instead of OT1
+\usepackage[utf8]{inputenc}      % Use UTF8 input encoding
+\usepackage{microtype}           % Improve typography
+\usepackage{booktabs}            % Publication quality tables
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{float}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{siunitx}
+\usepackage{multirow}
+
+\sisetup{list-final-separator = {, and }}
+
+% Captions for figures and tables
+\usepackage[labelfont=bf]{caption}
+\captionsetup[figure]{labelsep=period, name=Fig.}
+\captionsetup[table]{labelsep=newline}
+
+\usepackage{color}
+\definecolor{aneblue}{RGB}{0,128,173}
+\usepackage[colorlinks,breaklinks,bookmarksnumbered,bookmarksopen]{hyperref}
+\AtBeginDocument{
+  \hypersetup{linkcolor=aneblue, citecolor=aneblue, urlcolor=aneblue}
+}
+
+\usepackage[capitalise,nameinlink]{cleveref}
+
+\newtheorem{lemma}{Lemma}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+\title{Depletion capabilities in the OpenMC Monte Carlo particle transport code}
+
+\author[anl]{Paul K. Romano\corref{cor1}}
+\ead{promano@anl.gov}
+\cortext[cor1]{Corresponding author. Tel.: +1 630 252 6779.}
+
+\author[lanl]{Colin Josey}
+\ead{cjosey@lanl.gov}
+
+\author[gatech]{Andrew E. Johnson}
+\ead{dasindrew@gatech.edu}
+
+\author[tsinghua]{Jingang Liang}
+\ead{jingang@tsinghua.edu.cn}
+
+\address[anl]{Argonne National Laboratory, 9700 S. Cass Ave, Lemont, IL 60439, United States}
+\address[lanl]{Los Alamos National Laboratory, PO Box 1663, Los Alamos, NM 87545, United States}
+\address[gatech]{Georgia Institute of Technology, 770 State St NW, Atlanta, GA 30318, United States}
+\address[tsinghua]{Institute of Nuclear and New Energy Technology, Tsinghua University, Beijing, China}
+
+\begin{abstract}
+
+\end{abstract}
+
+\begin{keyword}
+  Monte Carlo, depletion
+\end{keyword}
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+Mention isotalo papers
+
+Mention previous depletion coupling with OpenMC (IMPC-Depletion, OpenBU, AMAC,
+etc.)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methodology}
+\label{sec:methods}
+
+\subsection{Time integration}
+
+Josey's work and comparison to substeps?
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
+\label{sec:results}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusions}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Acknowledgments}
+
+This research was supported by the Exascale Computing Project (17-SC-20-SC), a
+collaborative effort of the U.S. Department of Energy Office of Science and the
+National Nuclear Security Administration. The submitted manuscript has been
+created by UChicago Argonne, LLC, operator of Argonne National Laboratory under
+contract DE-AC02-06CH11357.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{References}
+
+\bibliographystyle{elsarticle-harv}
+\bibliography{references}
+
+\clearpage
+\vspace*{\fill}
+\noindent\fbox{%
+  \parbox{\textwidth}{%
+    The submitted manuscript has been created by UChicago Argonne, LLC, Operator
+    of Argonne \mbox{National} Laboratory (``Argonne'').  Argonne, a
+    U.S. Department of Energy Office of Science laboratory, is operated
+    under Contract No. \mbox{DE-AC02-06CH11357}.  The U.S. Government retains for
+    itself, and others acting on its behalf, a paid-up nonexclusive, irrevocable
+    worldwide license in said article to reproduce, prepare derivative works,
+    distribute copies to the public, and perform publicly and display publicly,
+    by or on behalf of the Government. The Department of Energy will provide
+    public access to these results of federally sponsored research in accordance
+    with the DOE Public Access
+    Plan. \url{http://energy.gov/downloads/doe-public-access-plan.}
+  }%
+}
+\vspace*{\fill}
+
+\end{document}
