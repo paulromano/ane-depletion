@@ -76,13 +76,141 @@ Mention isotalo papers
 Mention previous depletion coupling with OpenMC (IMPC-Depletion, OpenBU, AMAC,
 etc.)
 
+When materials in a system are subject to irradiation over a long period of
+time, nuclides within the material will transmute due to nuclear reactions as
+well as spontaneous radioactive decay. The time-dependent process by which
+nuclides transmute under irradiation is known as \emph{depletion} or
+\emph{burnup}. To accurately analyze nuclear systems, it is often necessary to
+predict how the composition of materials will change since this change results
+in a corresponding change in the solution of the transport equation. The
+equation that governs the transmutation and decay of nuclides inside of an
+irradiated environment can be written as
+\begin{equation}
+  \frac{dN_i(t)}{dt} = \sum\limits_j
+  \underbrace{\left [ \underbrace{f_{j \rightarrow i} \int_0^\infty dE \;
+  \sigma_j (E, t) \phi(E,t)}_\text{transmutation} +
+  \underbrace{\lambda_{j\rightarrow i}}_\text{decay} \right ]
+  N_j(t)}_{\text{Production of nuclide }i\text{ from nuclide }j}
+  - \underbrace{\left [\underbrace{\int_0^\infty dE \; \sigma_i
+  (E,t) \phi(E,t)}_\text{transmutation} +
+  \underbrace{\sum\limits_j \lambda_{i\rightarrow j}}_\text{decay} \right ]
+  N_i(t)}_{\text{Loss of nuclide }i}
+\end{equation}
+where $N_i$ is the density of nuclide $i$ at time $t$, $\sigma_i$ is the
+transmutation cross section for nuclide $i$ at energy $E$, $f_{j \rightarrow i}$
+is the fraction of transmutation reactions in nuclide $j$ that produce nuclide
+$i$, and $\lambda_{j \rightarrow i}$ is the decay constant for decay modes in
+nuclide $j$ that produce nuclide $i$. Note that we have not included the spatial
+dependence of the flux or cross sections. As one can see, the equation simply
+states that the rate of change of $N_i$ is equal to the production rate minus
+the loss rate. Because the equation for nuclide $i$ depends on the nuclide
+density for possibly many other nuclides, we have a system of first-order
+differential equations. To form a proper initial value problem, we also need the
+nuclide densities at time 0:
+\begin{equation}
+    N_i(0) = N_{i,0}.
+\end{equation}
+These equations can be written more compactly in matrix notation as
+\begin{equation}
+  \label{eq:depletion-matrix}
+  \frac{d\mathbf{n}}{dt} = \mathbf{A}(\mathbf{n},t)\mathbf{n}, \quad \mathbf{n}(0) =
+  \mathbf{n}_0
+\end{equation}
+where $\mathbf{n} \in \mathbb{R}^n$ is the nuclide density vector,
+$\mathbf{A}(\mathbf{n},t) \in \mathbb{R}^{n\times n}$ is the burnup matrix
+containing the decay and transmutation coefficients, and $\mathbf{n}_0$ is the
+initial density vector. Note that the burnup matrix depends on $\mathbf{n}$
+because the solution to the transport equation depends on the nuclide densities.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Methodology}
 \label{sec:methods}
 
 \subsection{Time integration}
+\label{sec:time_integration}
 
-Josey's work and comparison to substeps?
+A variety of numerical methods exist for solving \cref{eq:depletion-matrix}. The
+simplest such method, known as the "predictor" method, is to divide the overall
+time interval of interest $[0,t]$ into smaller timesteps over which it is
+assumed that the burnup matrix is constant. Let $t \in [t_i, t_i + h]$ be one
+such timestep. Over the timestep, the solution to \cref{eq:depletion-matrix} can
+be written analytically using the matrix exponential
+\begin{equation}
+    \mathbf{A}_i = \mathbf{A}(\mathbf{n}_i, t_i) \\
+    \mathbf{n}_{i+1} = e^{\mathbf{A}_i h} \mathbf{n}_i
+\end{equation}
+where $\mathbf{n}_i \equiv \mathbf{n}(t_i)$. The exponential of a matrix
+$\mathbf{X}$ is defined by the power series expansion
+\begin{equation}
+    e^{\mathbf{X}} = \sum\limits_{k=0}^\infty \frac{1}{k!} \left ( \mathbf{X}
+    \right )^k
+\end{equation}
+where $\mathbf{X}^0 = \mathbf{I}$. A series of so-called predictor-corrector
+methods that use multiple stages offer improved accuracy over the predictor
+method. The simplest of these methods, the CE/CM algorithm, is defined as
+\begin{equation}
+    \mathbf{n}_{i+1/2} = e^{\frac{h}{2}\mathbf{A}(\mathbf{n}_i, t_i)} \mathbf{n}_i \\
+    \mathbf{n}_{i+1} = e^{h \mathbf{A}(\mathbf{n}_{i+1/2},t_{i+1/2})} \mathbf{n}_i
+\end{equation}
+Here, the value of $\mathbf{n}$ at the midpoint is estimated using
+$\mathbf{A}$ evaluated at the beginning of the timestep. Then,
+$\mathbf{A}$ is evaluated using the densities at the midpoint and used to
+integrate over the entire timestep.
+
+Our aim here is not to exhaustively describe all integration methods but rather
+to give a few examples that elucidate the main considerations one must take into
+account when choosing a method. Generally, there is a tradeoff between the
+accuracy of the method and its computational expense. The expense is driven
+almost entirely by the time to compute a transport solution, i.e., to evaluate
+$\mathbf{A}$ for a given $\mathbf{n}$. Thus, the cost of a method scales with
+the number of $\mathbf{A}$ evaluations that are performed per timestep. On the
+other hand, methods that require more evaluations generally achieve higher
+accuracy. The predictor method only requires one evaluation and its error
+converges as $\mathcal{O}(h)$. The CE/CM method requires two evaluations and is
+thus twice as expensive as the predictor method, but achieves an error of
+$\mathcal{O}(h^2)$. An exhaustive description of time integration methods and
+their merits can be found in the thesis of \citet{josey2017phd}.
+
+OpenMC does not rely on a single time integration method but rather has several
+classes that implement different algorithms. For example, the
+openmc.deplete.PredictorIntegrator class implements the predictor
+method, and the openmc.deplete.CECMIntegrator class implements the
+CE/CM method. A full list of the integrator classes available can be found in
+the documentation for the openmc.deplete module.
+
+\subsection{Matrix Exponential}
+
+As we saw in \cref{sec:time_integration}, numerically integrating
+\cref{eq:depletion-matrix} requires evaluating one or more matrix exponentials.
+OpenMC uses the Chebyshev rational approximation method (CRAM), which was
+introduced in a series of papers by Pusa~\citep{pusa2010nse,pusa2011nse}, to
+evaluate matrix exponentials. In particular, OpenMC utilizes an incomplete
+partial fraction (IPF) form~\citep{pusa2016nse} of CRAM that provides a good
+balance of numerical stability and efficiency. In this representation the matrix
+exponential is approximated as
+\begin{equation}
+    e^{\mathbf{A}t} \approx \alpha_0 \prod\limits_{\ell=1}^{k/2} \left (
+    \mathbf{I} + 2 \text{Re} \left ( \widetilde{\alpha}_\ell \left (\mathbf{A}t
+    - \theta_\ell \mathbf{I} \right )^{-1} \right ) \right )
+\end{equation}
+where $k$ is the order of the approximation and $\alpha_0$,
+$\widetilde{\alpha}_\ell$, and $\theta_\ell$ are coefficients that have been
+tabulated for orders up to $k=48$. Rather than computing the full approximation
+and then multiplying it by a vector, the following algorithm\footnote{The
+original description of the algorithm presented by \citet{pusa2016nse} contains
+a typo.} is used to incrementally apply the terms within the product:
+\begin{enumerate}
+\item $\mathbf{n} \gets \mathbf{n_0}$
+\item For $\ell = 1, 2, \dots, k/2$
+  \begin{itemize}
+   \item $\mathbf{n} \gets \mathbf{n} + 2\text{Re}(\widetilde{\alpha}_\ell
+     (\mathbf{A}t - \theta_\ell)^{-1})\mathbf{n}$
+  \end{itemize}
+\item $\mathbf{n} \gets \alpha_0 \mathbf{n}$
+\end{enumerate}
+The $k$\ th order approximation for CRAM requires solving $k/2$ sparse linear
+systems. OpenMC relies on functionality from scipy.sparse.linalg for solving the
+linear systems.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
