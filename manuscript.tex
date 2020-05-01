@@ -199,15 +199,18 @@ tabulated for orders up to $k=48$. Rather than computing the full approximation
 and then multiplying it by a vector, the following algorithm\footnote{The
 original description of the algorithm presented by \citet{pusa2016nse} contains
 a typo.} is used to incrementally apply the terms within the product:
-\begin{enumerate}
-\item $\mathbf{n} \gets \mathbf{n_0}$
-\item For $\ell = 1, 2, \dots, k/2$
-  \begin{itemize}
-   \item $\mathbf{n} \gets \mathbf{n} + 2\text{Re}(\widetilde{\alpha}_\ell
-     (\mathbf{A}t - \theta_\ell)^{-1})\mathbf{n}$
-  \end{itemize}
-\item $\mathbf{n} \gets \alpha_0 \mathbf{n}$
-\end{enumerate}
+\begin{algorithm}[H]
+  \caption{Incomplete partial fraction form of CRAM.}
+  \label{alg:cram}
+  \begin{algorithmic}[1]
+    \State $\mathbf{n} \gets \mathbf{n_0}$
+    \For{$\ell \gets 1$ \textbf{to} $k/2$}
+      \State $\mathbf{n} \gets \mathbf{n} + 2\text{Re}(\widetilde{\alpha}_\ell
+        (\mathbf{A}t - \theta_\ell)^{-1})\mathbf{n}$
+    \EndFor
+    \State $\mathbf{n} \gets \alpha_0 \mathbf{n}$
+  \end{algorithmic}
+\end{algorithm}
 The $k$\ th order approximation for CRAM requires solving $k/2$ sparse linear
 systems. OpenMC relies on functionality from scipy.sparse.linalg for solving the
 linear systems.
