@@ -71,19 +71,63 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-Mention Isotalo papers
+When a material in a system is subject to irradiation over a long period of
+time, nuclides within the material will transmute due to nuclear reactions and
+spontaneous radioactive decay. The time-dependent process by which nuclides
+transmute under irradiation is known as \emph{depletion}, \emph{burnup}, or
+\emph{transmutation}. Modeling this process plays an important role in the
+design and licensing of nuclear reactors~\citep{betzler2019ned}. Consequently,
+many codes have been developed that solve the underlying equations for the
+change in material compositions over time.
 
-Lots of community efforts toward coupled transport-depletion calculations with
+When modeling nuclear reactors, depletion is inherently linked with solving the
+neutron transport equation. Nuclear reaction rates, which determine the rate at
+which nuclides are transmuted, must be provided from a transport code.
+Conversely, the change in material composition directly affects the solution of
+the transport equation. As will be shown in \cref{sec:methods}, this results in
+a non-linear coupling between transport and depletion. The implication is that
+depletion codes are rarely used in isolation---normally, they are directly
+coupled with a neutron transport code.
+
+With continued advances in computing, Monte Carlo (MC) particle transport
+simulations are now widely used in reactor design and analysis in a variety of
+roles. The earliest efforts to couple MC particle transport with depletion date
+back to the 1990s~\citep{moore1995inel,trellue1998lanl}. These early efforts
+involved taking existing MC and depletion codes, such as
+MCNP~\citep{goorley2012nt} and ORIGEN~\citep{croff1983nt}, and putting a
+``wrapper'' around them that orchestrated the transfer of solutions from one
+code to the other. Thus, the actual transport/depletion codes themselves
+required no source code changes. In the last decade, many MC code developers
+have chosen to directly include a depletion solver as a first-rate feature,
+including MCNPX~\citep{waters2007aip} (which has since been merged into
+MCNP6~\citep{goorley2012nt}), Serpent~\citep{leppanen2015ane}, and
+MC21~\citep{griesheimer2015ane}.
+
+In the present work, we describe a new depletion solver in
+OpenMC~\citep{romano2015ane1}, an open source, community-developed MC particle
+transport code. To date, OpenMC has not had a built-in depletion solver. This
+has led to numerous efforts in the community toward developing coupled
+transport-depletion calculations with
 OpenMC~\citep{gul2017ane,lanversin2017icone,lanversin2019phd,liu2019nst,zhuang2020pne,zhao2020ned,zhao2020cpc,zhang2020ane}.
+While these efforts have proven the viability of performing such coupled
+calculations with OpenMC, none of them has resulted in a validated,
+openly-available, and generalized capability that OpenMC users can take
+advantage of. The capability that is described herein is part of the OpenMC
+project and can be found in version 0.11 of the code or later.
 
-When materials in a system are subject to irradiation over a long period of
-time, nuclides within the material will transmute due to nuclear reactions as
-well as spontaneous radioactive decay. The time-dependent process by which
-nuclides transmute under irradiation is known as \emph{depletion} or
-\emph{burnup}. To accurately analyze nuclear systems, it is often necessary to
-predict how the composition of materials will change since this change results
-in a corresponding change in the solution of the transport equation. The
-equation that governs the transmutation and decay of nuclides inside of an
+The paper is organized as follows. In \cref{sec:methods}, we describe the
+methods and algorithms used to solve the depletion equations, the implementation
+within OpenMC, and how nuclear data is used to create depletion chains. Then, in
+\cref{sec:results}, we present results on two problems that demonstrate the
+accuracy of OpenMC when compared to Serpent~\citep{leppanen2015ane}. In
+\cref{sec:conclusions}, we summarize the findings, discuss limitations, and
+provide commentary on future avenues of inquiry that may be promising.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methodology}
+\label{sec:methods}
+
+The equation that governs the transmutation and decay of nuclides inside of an
 irradiated environment can be written as
 \begin{equation}
   \frac{dN_i(t)}{dt} = \sum\limits_j
@@ -97,16 +141,17 @@ irradiated environment can be written as
   N_i(t)}_{\text{Loss of nuclide }i}
 \end{equation}
 where $N_i$ is the density of nuclide $i$ at time $t$, $\sigma_i$ is the
-transmutation cross section for nuclide $i$ at energy $E$, $f_{j \rightarrow i}$
-is the fraction of transmutation reactions in nuclide $j$ that produce nuclide
-$i$, and $\lambda_{j \rightarrow i}$ is the decay constant for decay modes in
-nuclide $j$ that produce nuclide $i$. Note that we have not included the spatial
-dependence of the flux or cross sections. As one can see, the equation simply
-states that the rate of change of $N_i$ is equal to the production rate minus
-the loss rate. Because the equation for nuclide $i$ depends on the nuclide
-density for possibly many other nuclides, we have a system of first-order
-differential equations. To form a proper initial value problem, we also need the
-nuclide densities at time 0:
+transmutation cross section for nuclide $i$ at energy $E$ and time $t$, $\phi$
+is the neutron flux at energy $E$ and time $t$, $f_{j \rightarrow i}$ is the
+fraction of transmutation reactions in nuclide $j$ that produce nuclide $i$, and
+$\lambda_{j \rightarrow i}$ is the decay constant for decay modes in nuclide $j$
+that produce nuclide $i$. Note that we have not included the spatial dependence
+of the flux or cross sections. As one can see, the equation simply states that
+the rate of change of $N_i$ is equal to the production rate minus the loss rate.
+Because the equation for nuclide $i$ depends on the nuclide density for possibly
+many other nuclides, we have a system of first-order differential equations. To
+form a proper initial value problem, we also need the nuclide densities at time
+0:
 \begin{equation}
     N_i(0) = N_{i,0}.
 \end{equation}
@@ -122,12 +167,10 @@ containing the decay and transmutation coefficients, and $\mathbf{n}_0$ is the
 initial density vector. Note that the burnup matrix depends on $\mathbf{n}$
 because the solution to the transport equation depends on the nuclide densities.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Methodology}
-\label{sec:methods}
-
 \subsection{Time integration}
 \label{sec:time_integration}
+
+Mention Isotalo papers
 
 A variety of numerical methods exist for solving \cref{eq:depletion-matrix}. The
 simplest such method, known as the "predictor" method, is to divide the overall
@@ -223,6 +266,7 @@ linear systems.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusions}
+\label{sec:conclusions}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{Acknowledgments}
