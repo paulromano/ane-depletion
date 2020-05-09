@@ -54,7 +54,7 @@
 \ead{jingang@tsinghua.edu.cn}
 
 \address[anl]{Argonne National Laboratory, 9700 S. Cass Ave, Lemont, IL 60439, United States}
-\address[lanl]{Los Alamos National Laboratory, PO Box 1663, Los Alamos, NM 87545, United States}
+\address[lanl]{Los Alamos National Laboratory, P.O. Box 1663, Los Alamos, NM 87545, United States}
 \address[gatech]{Georgia Institute of Technology, 770 State St NW, Atlanta, GA 30318, United States}
 \address[tsinghua]{Institute of Nuclear and New Energy Technology, Tsinghua University, Beijing, China}
 
@@ -107,12 +107,12 @@ In the present work, we describe a new depletion solver in
 OpenMC~\citep{romano2015ane1}, an open source, community-developed MC particle
 transport code. To date, OpenMC has not had a built-in depletion solver. This
 has led to numerous efforts in the community toward developing coupled
-transport-depletion calculations with
-OpenMC~\citep{gul2017ane,lanversin2017icone,lanversin2019phd,liu2019nst,zhuang2020pne,zhao2020ned,zhao2020cpc,zhang2020ane}.
-While these efforts have proven the viability of performing such coupled
-calculations with OpenMC, none of them has resulted in a validated,
-openly-available, and generalized capability that OpenMC users can take
-advantage of. The capability that is described herein is part of the OpenMC
+transport-depletion calculations with OpenMC~\citep{gul2017ane,
+lanversin2017icone, lanversin2019phd, liu2019nst, zhuang2020pne, zhao2020ned,
+zhao2020cpc, zhang2020ane}. While these efforts have proven the viability of
+performing such coupled calculations with OpenMC, none of them has resulted in a
+validated, openly-available, and generalized capability that OpenMC users can
+take advantage of. The capability that is described herein is part of the OpenMC
 project and can be found in version 0.11 of the code or later.
 
 The paper is organized as follows. In \cref{sec:methods}, we describe the
@@ -130,28 +130,37 @@ provide commentary on future avenues of inquiry that may be promising.
 The equation that governs the transmutation and decay of nuclides inside of an
 irradiated environment can be written as
 \begin{equation}
-  \frac{dN_i(t)}{dt} = \sum\limits_j
-  \underbrace{\left [ \underbrace{f_{j \rightarrow i} \int_0^\infty dE \;
-  \sigma_j (E, t) \phi(E,t)}_\text{transmutation} +
-  \underbrace{\lambda_{j\rightarrow i}}_\text{decay} \right ]
-  N_j(t)}_{\text{Production of nuclide }i\text{ from nuclide }j}
-  - \underbrace{\left [\underbrace{\int_0^\infty dE \; \sigma_i
-  (E,t) \phi(E,t)}_\text{transmutation} +
-  \underbrace{\sum\limits_j \lambda_{i\rightarrow j}}_\text{decay} \right ]
-  N_i(t)}_{\text{Loss of nuclide }i}
+  \label{eq:depletion}
+  \begin{split}
+  \frac{dN_i(t)}{dt} = &\sum\limits_j \left [ f_{j \rightarrow i}
+  \int_0^\infty dE \; \sigma_j (E, t) \phi(E,t) + \lambda_{j\rightarrow i}
+  \right ] N_j(t) \\ &- \left [\int_0^\infty dE \; \sigma_i (E,t) \phi(E,t) +
+  \sum\limits_j \lambda_{i\rightarrow j} \right ] N_i(t), \quad i=1,\dots,n
+  \end{split}
 \end{equation}
-where $N_i$ is the density of nuclide $i$ at time $t$, $\sigma_i$ is the
-transmutation cross section for nuclide $i$ at energy $E$ and time $t$, $\phi$
-is the neutron flux at energy $E$ and time $t$, $f_{j \rightarrow i}$ is the
-fraction of transmutation reactions in nuclide $j$ that produce nuclide $i$, and
-$\lambda_{j \rightarrow i}$ is the decay constant for decay modes in nuclide $j$
-that produce nuclide $i$. Note that we have not included the spatial dependence
-of the flux or cross sections. As one can see, the equation simply states that
-the rate of change of $N_i$ is equal to the production rate minus the loss rate.
-Because the equation for nuclide $i$ depends on the nuclide density for possibly
-many other nuclides, we have a system of first-order differential equations. To
-form a proper initial value problem, we also need the nuclide densities at time
-0:
+where
+\begin{equation*}
+  \begin{split}
+  N_i(t) &\equiv \text{density of nuclide $i$ at time $t$} \\
+  \sigma_i(E,t) &\equiv \text{transmutation cross section for nuclide $i$ at energy $E$ and time $t$} \\
+  \phi(E,t) &\equiv \text{neutron flux at energy $E$ and time $t$} \\
+  f_{j \rightarrow i} &\equiv \text{fraction of transmutation reactions in nuclide $j$ that produce nuclide $i$} \\
+  \lambda_{j \rightarrow i} &\equiv \text{decay constant for decay modes in nuclide $j$ that produce nuclide $i$} \\
+  n &\equiv \text{total number of nuclides.}
+  \end{split}
+\end{equation*}
+Note that we have not included the spatial dependence of the flux or cross
+sections. For \cref{eq:depletion} to be accurate, the spatial variation of the
+reaction rates over the region which is being depleted should be small. For a
+reactor model, this may entail using a unique material in each fuel pin that is
+depleted separately. Ultimately, the user is responsible for deciding what level
+of discretization is necessary for the problem at hand.
+
+\Cref{eq:depletion} simply states that the rate of change of $N_i$ is equal to
+the production rate minus the loss rate. Because the equation for $N_i$ depends
+on the density other nuclides, $\{N_j \,|\, j \ne i\}$, \cref{eq:depletion}
+represents a system of first-order differential equations. To form a proper
+initial value problem, we also need the nuclide densities at time 0:
 \begin{equation}
     N_i(0) = N_{i,0}.
 \end{equation}
@@ -161,11 +170,15 @@ These equations can be written more compactly in matrix notation as
   \frac{d\mathbf{n}}{dt} = \mathbf{A}(\mathbf{n},t)\mathbf{n}, \quad \mathbf{n}(0) =
   \mathbf{n}_0
 \end{equation}
-where $\mathbf{n} \in \mathbb{R}^n$ is the nuclide density vector,
-$\mathbf{A}(\mathbf{n},t) \in \mathbb{R}^{n\times n}$ is the burnup matrix
-containing the decay and transmutation coefficients, and $\mathbf{n}_0$ is the
-initial density vector. Note that the burnup matrix depends on $\mathbf{n}$
-because the solution to the transport equation depends on the nuclide densities.
+where
+\begin{equation}
+  \mathbf{n} = \begin{pmatrix} N_1 \\ N_2 \\ \vdots \\ N_n \end{pmatrix}, \quad
+  \mathbf{n}_0 = \begin{pmatrix} N_{1,0} \\ N_{2,0} \\ \vdots \\ N_{n,0} \end{pmatrix}
+\end{equation}
+and $\mathbf{A}(\mathbf{n},t) \in \mathbb{R}^{n\times n}$ is the burnup matrix
+containing the decay and transmutation coefficients. Note that the burnup matrix
+depends on $\mathbf{n}$ because the solution to the transport equation depends
+on the nuclide densities.
 
 \subsection{Time integration}
 \label{sec:time_integration}
