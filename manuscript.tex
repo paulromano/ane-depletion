@@ -155,19 +155,19 @@ sections. For \cref{eq:depletion} to be accurate, the spatial variation of the
 reaction rates over the region which is being depleted should be small. For a
 reactor model, this may entail using a unique material in each fuel pin that is
 depleted separately. Ultimately, the user is responsible for deciding what level
-of discretization is necessary for the problem at hand.
+of discretization is adequate for the problem at hand.
 
 \Cref{eq:depletion} simply states that the rate of change of $N_i$ is equal to
 the production rate minus the loss rate. Because the equation for $N_i$ depends
-on the density other nuclides, $\{N_j \,|\, j \ne i\}$, \cref{eq:depletion}
+on the density of other nuclides, $\{N_j \,|\, j \ne i\}$, \cref{eq:depletion}
 represents a system of first-order differential equations. To form a proper
-initial value problem, we also need the nuclide densities at time 0:
+initial value problem, the nuclide densities at time 0 must be specified:
 \begin{equation}
     N_i(0) = N_{i,0}.
 \end{equation}
 These equations can be written more compactly in matrix notation as
 \begin{equation}
-  \label{eq:depletion-matrix}
+  \label{eq:depletion-matrix-t}
   \frac{d\mathbf{n}}{dt} = \mathbf{A}(\mathbf{n},t)\mathbf{n}, \quad \mathbf{n}(0) =
   \mathbf{n}_0
 \end{equation}
@@ -179,12 +179,47 @@ where
 and $\mathbf{A}(\mathbf{n},t) \in \mathbb{R}^{n\times n}$ is the burnup matrix
 containing the decay and transmutation coefficients. Note that the burnup matrix
 depends on $\mathbf{n}$ because the solution to the transport equation depends
-on the nuclide densities.
+on the nuclide densities, thereby making \cref{eq:depletion-matrix-t} nonlinear.
 
-\subsection{Time integration}
+Although the neutron transport equation is time-dependent, the timescale over
+which material compositions change is sufficiently long such that the transport
+equation can be solved as a time-independent equation. Without loss of
+generality, let us write the burnup matrix solely as a function of $\mathbf{n}$
+so that \cref{eq:depletion-matrix-t} becomes
+\begin{equation}
+  \label{eq:depletion-matrix}
+  \frac{d\mathbf{n}}{dt} = \mathbf{A}(\mathbf{n})\mathbf{n}, \quad \mathbf{n}(0) =
+  \mathbf{n}_0.
+\end{equation}
+This better reflects the fact that the time, $t$, is generally not an input to
+the transport equation, and hence the burnup matrix is uniquely determined by
+the value of $\mathbf{n}$.
+
+The principle difficulty of solving \cref{eq:depletion-matrix} is the fact that
+the elements of $\mathbf{A}$ are not constant with respect to time. If
+$\mathbf{A}$ is constant, \cref{eq:depletion-matrix} admits a closed-form
+solution,
+\begin{equation}
+  \mathbf{n}(t) = \exp \left (\mathbf{A} t \right ) \mathbf{n}_0.
+\end{equation}
+The exponential of a matrix $\mathbf{X}$ is defined by the power series
+expansion
+\begin{equation}
+    \exp(\mathbf{X}) = \sum\limits_{k=0}^\infty \frac{1}{k!} \mathbf{X}^k
+\end{equation}
+where $\mathbf{X}^0 = \mathbf{I}$. Most numerical methods for solving
+\cref{eq:depletion-matrix} involve two separate components:
+\begin{enumerate}
+  \item Approximating \cref{eq:depletion-matrix} in a form that involves taking
+  one or more matrix exponentials, and
+  \item Evaluating the matrix exponential or, equivalently, the action of a
+  matrix exponential on a vector.
+\end{enumerate}
+We will henceforth refer to the first component as \emph{time integration}. Let
+us now consider how each of these components are treated in OpenMC.
+
+\subsection{Time Integration}
 \label{sec:time_integration}
-
-Mention Isotalo papers
 
 A variety of numerical methods exist for solving \cref{eq:depletion-matrix}. The
 simplest such method, known as the "predictor" method, is to divide the overall
@@ -192,23 +227,17 @@ time interval of interest $[0,t]$ into smaller timesteps over which it is
 assumed that the burnup matrix is constant. Let $t \in [t_i, t_i + h]$ be one
 such timestep. Over the timestep, the solution to \cref{eq:depletion-matrix} can
 be written analytically using the matrix exponential
-\begin{equation}
-    \mathbf{A}_i = \mathbf{A}(\mathbf{n}_i, t_i) \\
-    \mathbf{n}_{i+1} = e^{\mathbf{A}_i h} \mathbf{n}_i
-\end{equation}
-where $\mathbf{n}_i \equiv \mathbf{n}(t_i)$. The exponential of a matrix
-$\mathbf{X}$ is defined by the power series expansion
-\begin{equation}
-    e^{\mathbf{X}} = \sum\limits_{k=0}^\infty \frac{1}{k!} \left ( \mathbf{X}
-    \right )^k
-\end{equation}
-where $\mathbf{X}^0 = \mathbf{I}$. A series of so-called predictor-corrector
+\begin{align}
+    \mathbf{A}_i &= \mathbf{A}(\mathbf{n}_i) \\
+    \mathbf{n}_{i+1} &= \exp(\mathbf{A}_i h) \mathbf{n}_i
+\end{align}
+where $\mathbf{n}_i \equiv \mathbf{n}(t_i)$. A series of so-called predictor-corrector
 methods that use multiple stages offer improved accuracy over the predictor
 method. The simplest of these methods, the CE/CM algorithm, is defined as
-\begin{equation}
-    \mathbf{n}_{i+1/2} = e^{\frac{h}{2}\mathbf{A}(\mathbf{n}_i, t_i)} \mathbf{n}_i \\
-    \mathbf{n}_{i+1} = e^{h \mathbf{A}(\mathbf{n}_{i+1/2},t_{i+1/2})} \mathbf{n}_i
-\end{equation}
+\begin{align}
+    \mathbf{n}_{i+1/2} &= \exp \left (\frac{h}{2}\mathbf{A}(\mathbf{n}_i) \right) \mathbf{n}_i \\
+    \mathbf{n}_{i+1} &= \exp \left(h \mathbf{A}(\mathbf{n}_{i+1/2}) \right) \mathbf{n}_i
+\end{align}
 Here, the value of $\mathbf{n}$ at the midpoint is estimated using
 $\mathbf{A}$ evaluated at the beginning of the timestep. Then,
 $\mathbf{A}$ is evaluated using the densities at the midpoint and used to
@@ -246,7 +275,7 @@ partial fraction (IPF) form~\citep{pusa2016nse} of CRAM that provides a good
 balance of numerical stability and efficiency. In this representation the matrix
 exponential is approximated as
 \begin{equation}
-    e^{\mathbf{A}t} \approx \alpha_0 \prod\limits_{\ell=1}^{k/2} \left (
+    \exp(\mathbf{A}t) \approx \alpha_0 \prod\limits_{\ell=1}^{k/2} \left (
     \mathbf{I} + 2 \text{Re} \left ( \widetilde{\alpha}_\ell \left (\mathbf{A}t
     - \theta_\ell \mathbf{I} \right )^{-1} \right ) \right )
 \end{equation}
@@ -268,14 +297,28 @@ a typo.} is used to incrementally apply the terms within the product:
     \State $\mathbf{n} \gets \alpha_0 \mathbf{n}$
   \end{algorithmic}
 \end{algorithm}
-The $k$\ th order approximation for CRAM requires solving $k/2$ sparse linear
+The $k$th order approximation for CRAM requires solving $k/2$ sparse linear
 systems. OpenMC relies on functionality from scipy.sparse.linalg for solving the
 linear systems.
 
+\subsection{Implementation}
+
+In-memory handling through Python API. This allows time loading nuclear data to
+be amortized since it only needs to be done once.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 \label{sec:results}
+
+\subsection{Data Preparation}
+
+Using ENDF/B-VII.1 files from MCNP distribution. However, for light water
+$S(\alpha,\beta)$, Serpent is not capable of handling continuous format, so the
+file from ENDF/B-VII.0 was used. The evaluation didn't change between VII.0 and
+VII.1, but the processing was different. For Serpent, decay and neutron fission
+yield sublibraries are concatenated.
+
+\subsection{}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
