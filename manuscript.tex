@@ -200,6 +200,7 @@ the elements of $\mathbf{A}$ are not constant with respect to time. If
 $\mathbf{A}$ is constant, \cref{eq:depletion-matrix} admits a closed-form
 solution,
 \begin{equation}
+  \label{eq:constant-A}
   \mathbf{n}(t) = \exp \left (\mathbf{A} t \right ) \mathbf{n}_0.
 \end{equation}
 The exponential of a matrix $\mathbf{X}$ is defined by the power series
@@ -221,27 +222,65 @@ us now consider how each of these components are treated in OpenMC.
 \subsection{Time Integration}
 \label{sec:time_integration}
 
-A variety of numerical methods exist for solving \cref{eq:depletion-matrix}. The
-simplest such method, known as the "predictor" method, is to divide the overall
-time interval of interest $[0,t]$ into smaller timesteps over which it is
-assumed that the burnup matrix is constant. Let $t \in [t_i, t_i + h]$ be one
-such timestep. Over the timestep, the solution to \cref{eq:depletion-matrix} can
-be written analytically using the matrix exponential
-\begin{align}
-    \mathbf{A}_i &= \mathbf{A}(\mathbf{n}_i) \\
-    \mathbf{n}_{i+1} &= \exp(\mathbf{A}_i h) \mathbf{n}_i
-\end{align}
-where $\mathbf{n}_i \equiv \mathbf{n}(t_i)$. A series of so-called predictor-corrector
-methods that use multiple stages offer improved accuracy over the predictor
-method. The simplest of these methods, the CE/CM algorithm, is defined as
+Because an analytical solution to \cref{eq:depletion-matrix} is not available,
+one must resort to using a numerical method that generates approximation
+solutions in discrete increments. In general, the problem we need to solve then
+is: given $\mathbf{n}_i \equiv \mathbf{n}(t_i)$, what is the value of
+$\mathbf{n}_{i+1} \equiv \mathbf{n}(t_{i+1}) = \mathbf{n}(t_i + h)$, with $h$
+being the step size? Without loss of generality, we shall choose $t_i=0$ as it
+makes the presentation of various methods simpler.
+
+OpenMC doesn't rely on a single time integration method but instead has several
+methods available that the user can choose. In the following sections, we
+outline the available methods in OpenMC, several of which have not been
+described in the literature.
+
+\subsubsection{Predictor Method}
+
+The simplest numerical method for solving \cref{eq:depletion-matrix} over a
+timestep is known as the \emph{predictor} method. It proceeds by assuming that
+$\mathbf{A}$ is constant over the timestep and assumes the value at the
+beginning of the step. The solution then follows directly from
+\cref{eq:constant-A}:
+\begin{equation}
+    \mathbf{n}_{i+1} = \exp\left(h\mathbf{A}(\mathbf{n}_i) \right) \mathbf{n}_i.
+\end{equation}
+The end-of-step composition is thus ``predicted'' by the reaction rates at the
+beginning of the step. This method has the virtue of requiring a single
+transport solution and a single matrix exponential but is only first-order
+accurate.
+
+\subsubsection{Predictor-Corrector Methods}
+
+A series of \emph{predictor-corrector} methods that use multiple stages offer
+improved accuracy over the predictor method. The simplest of these methods is
+the CE/CM algorithm, which is the default algorithm used in
+MCNP6~\citep{fensin2006tans}. In this method, $\mathbf{A}$ is evaluated at the
+beginning of the step and used to deplete the composition over half the step.
+Then, $\mathbf{A}$ is reevaluated using the predicted middle-of-step composition
+and used to deplete over the full step. The algorithm can be expressed as
 \begin{align}
     \mathbf{n}_{i+1/2} &= \exp \left (\frac{h}{2}\mathbf{A}(\mathbf{n}_i) \right) \mathbf{n}_i \\
-    \mathbf{n}_{i+1} &= \exp \left(h \mathbf{A}(\mathbf{n}_{i+1/2}) \right) \mathbf{n}_i
+    \mathbf{n}_{i+1} &= \exp \left(h \mathbf{A}(\mathbf{n}_{i+1/2}) \right) \mathbf{n}_i.
 \end{align}
-Here, the value of $\mathbf{n}$ at the midpoint is estimated using
-$\mathbf{A}$ evaluated at the beginning of the timestep. Then,
-$\mathbf{A}$ is evaluated using the densities at the midpoint and used to
-integrate over the entire timestep.
+This method requires two transport solutions and two matrix exponential solves
+(twice as expensive as the predictor method) and is second-order accurate.
+
+More sophisticated predictor-corrector methods have been introduced by
+\citet{isotalo2011ane2,isotalo2011ane3}. In the CE/LI method, the end-of-step
+composition is first predicted using $\mathbf{A}(\mathbf{n}_i)$:
+\begin{equation}
+  \mathbf{n}_{i+1}^p = \exp \left( h\mathbf{A}(\mathbf{n}_i) \right) \mathbf{n}_i
+\end{equation}
+Then, $\mathbf{n}_{i+1}^p$, is used to reevaluate $\mathbf{A}$. An approximation
+of $\mathbf{A}$ that depends on time is formed by linearly interpolating between
+$\mathbf{A}(\mathbf{n}_i)$ and $\mathbf{A}\left(\mathbf{n}_{i+1}^p\right)$. This
+contitutes a new differential equation for an approximation of $\mathbf{n}$ that
+we shall denote $\hat{\mathbf{n}}$,
+\begin{equation}
+  \frac{d\hat{\mathbf{n}}}{dt} = \left [ \left ( 1 - \frac{t}{h} \right)
+  \mathbf{A}(\mathbf{n}_i) + \frac{t}{h} \mathbf{A}\left(\mathbf{n}_{i+1}^p \right) \right ] \hat{\mathbf{n}}
+\end{equation}
 
 Our aim here is not to exhaustively describe all integration methods but rather
 to give a few examples that elucidate the main considerations one must take into
