@@ -34,6 +34,7 @@
 
 \newtheorem{lemma}{Lemma}
 
+\newcommand{\vect}[1]{\mathbf{#1}} % vectors and matrices
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
@@ -160,55 +161,56 @@ of discretization is adequate for the problem at hand.
 \Cref{eq:depletion} simply states that the rate of change of $N_i$ is equal to
 the production rate minus the loss rate. Because the equation for $N_i$ depends
 on the density of other nuclides, $\{N_j \,|\, j \ne i\}$, \cref{eq:depletion}
-represents a system of first-order differential equations. To form a proper
-initial value problem, the nuclide densities at time 0 must be specified:
+represents a system of first-order ordinary differential equations (ODEs). To
+form a proper initial value problem, the nuclide densities at time 0 must be
+specified:
 \begin{equation}
     N_i(0) = N_{i,0}.
 \end{equation}
 These equations can be written more compactly in matrix notation as
 \begin{equation}
   \label{eq:depletion-matrix-t}
-  \frac{d\mathbf{n}}{dt} = \mathbf{A}(\mathbf{n},t)\mathbf{n}, \quad \mathbf{n}(0) =
-  \mathbf{n}_0
+  \frac{d\vect{n}}{dt} = \vect{A}(\vect{n},t)\vect{n}, \quad \vect{n}(0) =
+  \vect{n}_0
 \end{equation}
 where
 \begin{equation}
-  \mathbf{n} = \begin{pmatrix} N_1 \\ N_2 \\ \vdots \\ N_n \end{pmatrix}, \quad
-  \mathbf{n}_0 = \begin{pmatrix} N_{1,0} \\ N_{2,0} \\ \vdots \\ N_{n,0} \end{pmatrix}
+  \vect{n} = \begin{pmatrix} N_1 \\ N_2 \\ \vdots \\ N_n \end{pmatrix}, \quad
+  \vect{n}_0 = \begin{pmatrix} N_{1,0} \\ N_{2,0} \\ \vdots \\ N_{n,0} \end{pmatrix}
 \end{equation}
-and $\mathbf{A}(\mathbf{n},t) \in \mathbb{R}^{n\times n}$ is the burnup matrix
+and $\vect{A}(\vect{n},t) \in \mathbb{R}^{n\times n}$ is the burnup matrix
 containing the decay and transmutation coefficients. Note that the burnup matrix
-depends on $\mathbf{n}$ because the solution to the transport equation depends
+depends on $\vect{n}$ because the solution to the transport equation depends
 on the nuclide densities, thereby making \cref{eq:depletion-matrix-t} nonlinear.
 
 Although the neutron transport equation is time-dependent, the timescale over
 which material compositions change is sufficiently long such that the transport
 equation can be solved as a time-independent equation. Without loss of
-generality, let us write the burnup matrix solely as a function of $\mathbf{n}$
+generality, let us write the burnup matrix solely as a function of $\vect{n}$
 so that \cref{eq:depletion-matrix-t} becomes
 \begin{equation}
   \label{eq:depletion-matrix}
-  \frac{d\mathbf{n}}{dt} = \mathbf{A}(\mathbf{n})\mathbf{n}, \quad \mathbf{n}(0) =
-  \mathbf{n}_0.
+  \frac{d\vect{n}}{dt} = \vect{A}(\vect{n})\vect{n}, \quad \vect{n}(0) =
+  \vect{n}_0.
 \end{equation}
 This better reflects the fact that the time, $t$, is generally not an input to
 the transport equation, and hence the burnup matrix is uniquely determined by
-the value of $\mathbf{n}$.
+the value of $\vect{n}$.
 
 The principle difficulty of solving \cref{eq:depletion-matrix} is the fact that
-the elements of $\mathbf{A}$ are not constant with respect to time. If
-$\mathbf{A}$ is constant, \cref{eq:depletion-matrix} admits a closed-form
+the elements of $\vect{A}$ are not constant with respect to time. If
+$\vect{A}$ is constant, \cref{eq:depletion-matrix} admits a closed-form
 solution,
 \begin{equation}
   \label{eq:constant-A}
-  \mathbf{n}(t) = \exp \left (\mathbf{A} t \right ) \mathbf{n}_0.
+  \vect{n}(t) = \exp \left (\vect{A} t \right ) \vect{n}_0.
 \end{equation}
-The exponential of a matrix $\mathbf{X}$ is defined by the power series
+The exponential of a matrix $\vect{X}$ is defined by the power series
 expansion
 \begin{equation}
-    \exp(\mathbf{X}) = \sum\limits_{k=0}^\infty \frac{1}{k!} \mathbf{X}^k
+    \exp(\vect{X}) = \sum\limits_{k=0}^\infty \frac{\vect{X}^k}{k!}
 \end{equation}
-where $\mathbf{X}^0 = \mathbf{I}$. Most numerical methods for solving
+where $\vect{X}^0 = \vect{I}$. Most numerical methods for solving
 \cref{eq:depletion-matrix} involve two separate components:
 \begin{enumerate}
   \item Approximating \cref{eq:depletion-matrix} in a form that involves taking
@@ -225,8 +227,8 @@ us now consider how each of these components are treated in OpenMC.
 Because an analytical solution to \cref{eq:depletion-matrix} is not available,
 one must resort to using a numerical method that generates approximation
 solutions in discrete increments. In general, the problem we need to solve then
-is: given $\mathbf{n}_i \equiv \mathbf{n}(t_i)$, what is the value of
-$\mathbf{n}_{i+1} \equiv \mathbf{n}(t_{i+1}) = \mathbf{n}(t_i + h)$, with $h$
+is: given $\vect{n}_i \equiv \vect{n}(t_i)$, what is the value of
+$\vect{n}_{i+1} \equiv \vect{n}(t_{i+1}) = \vect{n}(t_i + h)$, with $h$
 being the step size? Without loss of generality, we shall choose $t_i=0$ as it
 makes the presentation of various methods simpler.
 
@@ -239,56 +241,153 @@ described in the literature.
 
 The simplest numerical method for solving \cref{eq:depletion-matrix} over a
 timestep is known as the \emph{predictor} method. It proceeds by assuming that
-$\mathbf{A}$ is constant over the timestep and assumes the value at the
+$\vect{A}$ is constant over the timestep and assumes the value at the
 beginning of the step. The solution then follows directly from
 \cref{eq:constant-A}:
 \begin{equation}
-    \mathbf{n}_{i+1} = \exp\left(h\mathbf{A}(\mathbf{n}_i) \right) \mathbf{n}_i.
+    \vect{n}_{i+1} = \exp\left(h\vect{A}(\vect{n}_i) \right) \vect{n}_i.
 \end{equation}
 The end-of-step composition is thus ``predicted'' by the reaction rates at the
 beginning of the step. This method has the virtue of requiring a single
-transport solution and a single matrix exponential but is only first-order
-accurate.
+transport solution and a single matrix exponential per timestep but is only
+first-order accurate.
 
 \subsubsection{Predictor-Corrector Methods}
 
 A series of \emph{predictor-corrector} methods that use multiple stages offer
 improved accuracy over the predictor method. The simplest of these methods is
 the CE/CM algorithm, which is the default algorithm used in
-MCNP6~\citep{fensin2006tans}. In this method, $\mathbf{A}$ is evaluated at the
+MCNP6~\citep{fensin2006tans}. In this method, $\vect{A}$ is evaluated at the
 beginning of the step and used to deplete the composition over half the step.
-Then, $\mathbf{A}$ is reevaluated using the predicted middle-of-step composition
+Then, $\vect{A}$ is reevaluated using the predicted middle-of-step composition
 and used to deplete over the full step. The algorithm can be expressed as
-\begin{align}
-    \mathbf{n}_{i+1/2} &= \exp \left (\frac{h}{2}\mathbf{A}(\mathbf{n}_i) \right) \mathbf{n}_i \\
-    \mathbf{n}_{i+1} &= \exp \left(h \mathbf{A}(\mathbf{n}_{i+1/2}) \right) \mathbf{n}_i.
-\end{align}
+\begin{equation}
+  \begin{split}
+    \vect{n}_{i+1/2} &= \exp \left (\frac{h}{2}\vect{A}(\vect{n}_i) \right) \vect{n}_i \\
+    \vect{n}_{i+1} &= \exp \left(h \vect{A}(\vect{n}_{i+1/2}) \right) \vect{n}_i.
+  \end{split}
+\end{equation}
 This method requires two transport solutions and two matrix exponential solves
-(twice as expensive as the predictor method) and is second-order accurate.
+per timestep (twice as expensive as the predictor method) and is second-order
+accurate.
 
 More sophisticated predictor-corrector methods have been introduced by
 \citet{isotalo2011ane2,isotalo2011ane3}. In the CE/LI method, the end-of-step
-composition is first predicted using $\mathbf{A}(\mathbf{n}_i)$:
+composition is first predicted using $\vect{A}(\vect{n}_i)$:
 \begin{equation}
-  \mathbf{n}_{i+1}^p = \exp \left( h\mathbf{A}(\mathbf{n}_i) \right) \mathbf{n}_i
+  \vect{n}_{i+1}^p = \exp \left( h\vect{A}(\vect{n}_i) \right) \vect{n}_i.
 \end{equation}
-Then, $\mathbf{n}_{i+1}^p$, is used to reevaluate $\mathbf{A}$. An approximation
-of $\mathbf{A}$ that depends on time is formed by linearly interpolating between
-$\mathbf{A}(\mathbf{n}_i)$ and $\mathbf{A}\left(\mathbf{n}_{i+1}^p\right)$. This
-contitutes a new differential equation for an approximation of $\mathbf{n}$ that
-we shall denote $\hat{\mathbf{n}}$,
+Then, $\vect{n}_{i+1}^p$ is used to reevaluate $\vect{A}$. An approximation of
+$\vect{A}$ that depends on time is formed by linearly interpolating between
+$\vect{A}(\vect{n}_i)$ and $\vect{A}\left(\vect{n}_{i+1}^p\right)$.
+\Cref{eq:depletion-matrix} thus becomes
 \begin{equation}
-  \frac{d\hat{\mathbf{n}}}{dt} = \left [ \left ( 1 - \frac{t}{h} \right)
-  \mathbf{A}(\mathbf{n}_i) + \frac{t}{h} \mathbf{A}\left(\mathbf{n}_{i+1}^p \right) \right ] \hat{\mathbf{n}}
+  \label{eq:linear-ode}
+  \frac{d\vect{n}}{dt} = \hat{\vect{A}}(t) \vect{n}
 \end{equation}
+where
+\begin{equation}
+  \label{eq:linear-interp}
+  \hat{\vect{A}}(t) = \left ( 1 - \frac{t}{h} \right) \vect{A}(\vect{n}_i) +
+  \frac{t}{h} \vect{A}\left(\vect{n}_{i+1}^p \right).
+\end{equation}
+We see that $\hat{\vect{A}}$ no longer depends on $\vect{n}$ thereby making
+\cref{eq:linear-ode} a linear nonautonomous ODE. Because $\hat{\vect{A}}$ is a
+function of time, an approximation is still needed to obtain $\vect{n}_{i+1}$.
+The simplest approach~\citep{isotalo2011ane2} is to average
+\cref{eq:linear-interp} over the step,
+\begin{equation}
+  \bar{\vect{A}} = \int_0^h dt \, \hat{\vect{A}}(t) = \frac{\vect{A}(\vect{n}_i)
+  + \vect{A}(\vect{n}_{i+1}^p)}{2},
+\end{equation}
+and then use $\bar{\vect{A}}$ to deplete over the full step:
+\begin{equation}
+  \vect{n}_{i+1} = \exp \left ( h \bar{\vect{A}} \right ) \vect{n}_i.
+\end{equation}
+\citet{isotalo2011ane3} suggested an improvement over this approach wherein
+$\hat{\vect{A}}$ is averaged over substeps instead of the entire interval. That
+is, if we divide the timestep into $m$ substeps, the solution is given by
+\begin{equation}
+  \begin{split}
+    \label{eq:celi-substeps}
+    \vect{A}_s &= \int_{(s-1)h/m}^{sh/m} dt \; \hat{\vect{A}}(t), \quad s=1,\dots,m \\
+    \vect{n}_{i+1} &= \exp\left(\vect{A}_m \right) \exp \left(\vect{A}_{m-1}\right)
+    \cdots \exp\left(\vect{A}_1\right) \vect{n}_i.
+  \end{split}
+\end{equation}
+While using substeps is a reasonable approach for solving
+\cref{eq:linear-ode}, there are other methods as well. For example, some
+codes use a backward differentiation formula rather than a method based on an
+exponential integrator~\cite{carpenter2009mc,hykes2017mc,sublet2017nds}.
+
+\subsubsection{Magnus expansion integrators}
+
+Any linear approximation of \cref{eq:depletion-matrix} characterized by
+$\vect{A}$ that depends only on time, such as \cref{eq:linear-ode}, has an
+infinite series solution known as the Magnus expansion~\citep{blanes2009pr}.
+This expansion takes the form
+\begin{equation}
+  \begin{split}
+  \vect{n}(t) &= \exp \left( \vect{\Omega}(t) \right ) \vect{n}_0 \\
+  \vect{\Omega}(t) &= \sum\limits_{k=1}^\infty \vect{\Omega}_k(t).
+  \end{split}
+\end{equation}
+The first three terms of the expansion are given by
+\begin{equation}
+  \label{eq:magnus-terms}
+  \begin{split}
+    \vect{\Omega}_1(t) &= \int_0^t dt_1 \vect{A}(t_1) \\
+    \vect{\Omega}_2(t) &= \int_0^t dt_1 \int_0^{t_1} dt_2 [\vect{A}(t_1), \vect{A}(t_2) ] \\
+    \vect{\Omega}_3(t) &= \int_0^t dt_1 \int_0^{t_1} dt_2 \int_0^{t_2} dt_3
+      \left ( [\vect{A}(t_1), [\vect{A}(t_2), \vect{A}(t_3)]] + [\vect{A}(t_3), [\vect{A}(t_2), \vect{A}(t_1)]] \right )
+  \end{split}
+\end{equation}
+where $[\vect{A},\vect{B}] = \vect{A}\vect{B} - \vect{B}\vect{A}$ is a matrix
+commutator. Subsequent terms can be defined through a recurrence relation.
+
+The Magnus expansion can be used as the basis for developing numerical
+integration algorithms and has been widely studied. The typical approach is to
+truncate the $\vect{\Omega}$ series at an appropriate order and apply an
+approximation to the multivariate integrals in \cref{eq:magnus-terms}. In
+particular, OpenMC uses a fourth-order commutator-free exponential
+integrator~\citep{blanes2006anm} that is derived from the Magnus expansion in
+order to solve \cref{eq:linear-ode}. In this approximation, the Magnus expansion
+is truncated at two terms and then expressed as the composition of two
+exponentials. For a system of ODEs in the form of \cref{eq:linear-ode}, the
+resulting method is
+\begin{equation}
+  \label{eq:cf4}
+  \vect{n}_{i+1} = \exp (a_2 \vect{A}_1 + a_1 \vect{A}_2)
+  \exp (a_1 \vect{A}_1 + a_2 \vect{A}_2) \vect{n}_i
+\end{equation}
+where $\vect{A}_1$ and $\vect{A}_2$ correspond $\hat{\vect{A}}$ evaluated at the
+nodes of a two-point Gauss-Legendre quadrature over the interval $[0,h]$:
+\begin{equation}
+  \begin{split}
+    a_1 &= \frac{1}{4} + \frac{\sqrt{3}}{6}, \; a_2 = \frac{1}{4} - \frac{\sqrt{3}}{6} \\
+    c_1 &= \frac{1}{2} - \frac{\sqrt{3}}{6}, \; c_2 = \frac{1}{2} + \frac{\sqrt{3}}{6} \\
+    \vect{A}_1 &= h\hat{\vect{A}}\left ( c_1 h\right ), \; \vect{A}_2 = h\hat{\vect{A}}\left ( c_2 h\right ).
+  \end{split}
+\end{equation}
+Evaluating $\vect{A}_1$ and $\vect{A}_2$ using \cref{eq:linear-interp} and
+substituting in \cref{eq:cf4}, we obtain a CE/LI method based on the
+fourth-order commutator-free Magnus integrator:
+\begin{equation}
+  \vect{n}_{i+1} = \exp \left( \frac{h}{12} \vect{A}(\vect{n}_i) + \frac{5h}{12} \vect{A}(\vect{n}_{i+1}^p) \right)
+  \exp \left( \frac{5h}{12} \vect{A}(\vect{n}_i) + \frac{h}{12} \vect{A}(\vect{n}_{i+1}^p) \right) \vect{n}_i.
+\end{equation}
+
+OpenMC does include
+both CE/LI and LE/QI methods~\cite{isotalo2011ane2}, but the approach for
+solving \cref{eq:linear-ode} is a bit different.
 
 Our aim here is not to exhaustively describe all integration methods but rather
 to give a few examples that elucidate the main considerations one must take into
 account when choosing a method. Generally, there is a tradeoff between the
 accuracy of the method and its computational expense. The expense is driven
 almost entirely by the time to compute a transport solution, i.e., to evaluate
-$\mathbf{A}$ for a given $\mathbf{n}$. Thus, the cost of a method scales with
-the number of $\mathbf{A}$ evaluations that are performed per timestep. On the
+$\vect{A}$ for a given $\vect{n}$. Thus, the cost of a method scales with
+the number of $\vect{A}$ evaluations that are performed per timestep. On the
 other hand, methods that require more evaluations generally achieve higher
 accuracy. The predictor method only requires one evaluation and its error
 converges as $\mathcal{O}(h)$. The CE/CM method requires two evaluations and is
@@ -314,9 +413,9 @@ partial fraction (IPF) form~\citep{pusa2016nse} of CRAM that provides a good
 balance of numerical stability and efficiency. In this representation the matrix
 exponential is approximated as
 \begin{equation}
-    \exp(\mathbf{A}t) \approx \alpha_0 \prod\limits_{\ell=1}^{k/2} \left (
-    \mathbf{I} + 2 \text{Re} \left ( \widetilde{\alpha}_\ell \left (\mathbf{A}t
-    - \theta_\ell \mathbf{I} \right )^{-1} \right ) \right )
+    \exp(\vect{A}t) \approx \alpha_0 \prod\limits_{\ell=1}^{k/2} \left (
+    \vect{I} + 2 \text{Re} \left ( \widetilde{\alpha}_\ell \left (\vect{A}t
+    - \theta_\ell \vect{I} \right )^{-1} \right ) \right )
 \end{equation}
 where $k$ is the order of the approximation and $\alpha_0$,
 $\widetilde{\alpha}_\ell$, and $\theta_\ell$ are coefficients that have been
@@ -328,12 +427,12 @@ a typo.} is used to incrementally apply the terms within the product:
   \caption{Incomplete partial fraction form of CRAM.}
   \label{alg:cram}
   \begin{algorithmic}[1]
-    \State $\mathbf{n} \gets \mathbf{n_0}$
+    \State $\vect{n} \gets \vect{n_0}$
     \For{$\ell \gets 1$ \textbf{to} $k/2$}
-      \State $\mathbf{n} \gets \mathbf{n} + 2\text{Re}(\widetilde{\alpha}_\ell
-        (\mathbf{A}t - \theta_\ell)^{-1})\mathbf{n}$
+      \State $\vect{n} \gets \vect{n} + 2\text{Re}(\widetilde{\alpha}_\ell
+        (\vect{A}t - \theta_\ell)^{-1})\vect{n}$
     \EndFor
-    \State $\mathbf{n} \gets \alpha_0 \mathbf{n}$
+    \State $\vect{n} \gets \alpha_0 \vect{n}$
   \end{algorithmic}
 \end{algorithm}
 The $k$th order approximation for CRAM requires solving $k/2$ sparse linear
