@@ -272,8 +272,9 @@ per timestep (twice as expensive as the predictor method) and is second-order
 accurate.
 
 More sophisticated predictor-corrector methods have been introduced by
-\citet{isotalo2011ane2,isotalo2011ane3}. In the CE/LI method, the end-of-step
-composition is first predicted using $\vect{A}(\vect{n}_i)$:
+\citet{isotalo2011ane2,isotalo2011ane3}. In the CE/LI (constant extrapolation,
+linear interpolation) method, the end-of-step composition is first predicted
+using $\vect{A}(\vect{n}_i)$:
 \begin{equation}
   \vect{n}_{i+1}^p = \exp \left( h\vect{A}(\vect{n}_i) \right) \vect{n}_i.
 \end{equation}
@@ -349,14 +350,18 @@ The Magnus expansion can be used as the basis for developing numerical
 integration algorithms and has been widely studied. The typical approach is to
 truncate the $\vect{\Omega}$ series at an appropriate order and apply an
 approximation to the multivariate integrals in \cref{eq:magnus-terms}. In
-particular, OpenMC uses a fourth-order commutator-free exponential
+particular, OpenMC uses a fourth-order commutator-free\footnote{The integrator
+is called commutator-free because it does not require computing any matrix
+commutators like those that appear in \cref{eq:magnus-terms}. Other methods
+based on the Magnus expansion do require computing matrix commutators, some of
+which were explored by \citet{josey2017phd}.} exponential
 integrator~\citep{blanes2006anm} that is derived from the Magnus expansion in
 order to solve \cref{eq:linear-ode}. In this approximation, the Magnus expansion
 is truncated at two terms and then expressed as the composition of two
 exponentials. For a system of ODEs in the form of \cref{eq:linear-ode}, the
 resulting method is
 \begin{equation}
-  \label{eq:cf4}
+  \label{eq:compose4}
   \vect{n}_{i+1} = \exp (a_2 \vect{A}_1 + a_1 \vect{A}_2)
   \exp (a_1 \vect{A}_1 + a_2 \vect{A}_2) \vect{n}_i
 \end{equation}
@@ -370,37 +375,52 @@ nodes of a two-point Gauss-Legendre quadrature over the interval $[0,h]$:
   \end{split}
 \end{equation}
 Evaluating $\vect{A}_1$ and $\vect{A}_2$ using \cref{eq:linear-interp} and
-substituting in \cref{eq:cf4}, we obtain a CE/LI method based on the
+substituting in \cref{eq:compose4}, we obtain a CE/LI method based on the
 fourth-order commutator-free Magnus integrator:
 \begin{equation}
-  \vect{n}_{i+1} = \exp \left( \frac{h}{12} \vect{A}(\vect{n}_i) + \frac{5h}{12} \vect{A}(\vect{n}_{i+1}^p) \right)
-  \exp \left( \frac{5h}{12} \vect{A}(\vect{n}_i) + \frac{h}{12} \vect{A}(\vect{n}_{i+1}^p) \right) \vect{n}_i.
+  \label{eq:celi-cfq4}
+  \begin{split}
+  \vect{n}_{i+1}^p &= \exp \left ( h \vect{A}(\vect{n}_i ) \right ) \\
+  \vect{n}_{i+1} &= \exp \left( \frac{h}{12} \vect{A}(\vect{n}_i) +
+    \frac{5h}{12} \vect{A}(\vect{n}_{i+1}^p) \right)
+  \exp \left( \frac{5h}{12} \vect{A}(\vect{n}_i) +
+  \frac{h}{12} \vect{A}(\vect{n}_{i+1}^p) \right) \vect{n}_i.
+  \end{split}
 \end{equation}
+\Cref{eq:celi-cfq4} requires two transport solutions and two matrix
+exponentials, whereas the CE/LI method with substeps, \cref{eq:celi-substeps},
+requires two transport solutions and $m$ matrix exponentials. A comparison of
+these two approaches has shown that \cref{eq:celi-cfq4} achieves better accuracy
+than the use of five substeps~\citep{josey2017phd}. OpenMC also includes an
+integrator based on the LE/QI (linear extrapolation, quadratic interpolation)
+method~\citep{isotalo2011ane2} where the integration of \cref{eq:linear-ode} (in
+which case $\hat{\vect{A}}(t)$ is represented by a quadratic polynomial in $t$)
+is performed using the fourth-order commutator-free Magnus integrator based on
+\cref{eq:compose4}.
 
-OpenMC does include
-both CE/LI and LE/QI methods~\cite{isotalo2011ane2}, but the approach for
-solving \cref{eq:linear-ode} is a bit different.
+\subsubsection{Lie Group Integrator}
 
-Our aim here is not to exhaustively describe all integration methods but rather
-to give a few examples that elucidate the main considerations one must take into
-account when choosing a method. Generally, there is a tradeoff between the
-accuracy of the method and its computational expense. The expense is driven
-almost entirely by the time to compute a transport solution, i.e., to evaluate
-$\vect{A}$ for a given $\vect{n}$. Thus, the cost of a method scales with
-the number of $\vect{A}$ evaluations that are performed per timestep. On the
-other hand, methods that require more evaluations generally achieve higher
-accuracy. The predictor method only requires one evaluation and its error
-converges as $\mathcal{O}(h)$. The CE/CM method requires two evaluations and is
-thus twice as expensive as the predictor method, but achieves an error of
-$\mathcal{O}(h^2)$. An exhaustive description of time integration methods and
-their merits can be found in the thesis of \citet{josey2017phd}.
+\citep{celledoni2004fgcs}
+
+\subsubsection{Stochastic Implicit Euler Integrators}
+
+
+\subsubsection{Summary}
 
 OpenMC does not rely on a single time integration method but rather has several
-classes that implement different algorithms. For example, the
-openmc.deplete.PredictorIntegrator class implements the predictor
-method, and the openmc.deplete.CECMIntegrator class implements the
-CE/CM method. A full list of the integrator classes available can be found in
-the documentation for the openmc.deplete module.
+classes that implement different algorithms. Generally, there is a tradeoff
+between the accuracy of the method, the computational expense, and the memory
+requirements. When a MC code is used, the expense is almost entirely by the time
+to compute the transport solution, i.e., to evaluate $\vect{A}$ for a given
+$\vect{n}$. Thus, the cost of a method scales with the number of $\vect{A}$
+evaluations that are performed per timestep. On the other hand, methods that
+require more evaluations generally achieve higher accuracy. The predictor method
+only requires one evaluation and its error converges as $\mathcal{O}(h)$. The
+CE/CM method requires two evaluations and is thus twice as expensive as the
+predictor method, but achieves an error of $\mathcal{O}(h^2)$. An exhaustive
+description of time integration methods and their merits can be found in the
+thesis of \citet{josey2017phd}.
+
 
 \subsection{Matrix Exponential}
 
