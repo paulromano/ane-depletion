@@ -129,8 +129,8 @@ provide commentary on future avenues of inquiry that may be promising.
 \section{Methodology}
 \label{sec:methods}
 
-The equation that governs the transmutation and decay of nuclides inside of an
-irradiated environment can be written as
+The equation that governs the transmutation of nuclides by nuclear reactions and
+radioactive decay inside of an irradiated environment can be written as
 \begin{equation}
   \label{eq:depletion}
   \begin{split}
@@ -156,7 +156,7 @@ sections. For \cref{eq:depletion} to be accurate, the spatial variation of the
 reaction rates over the region which is being depleted should be small. For a
 reactor model, this may entail using a unique material in each fuel pin that is
 depleted separately. Ultimately, the user is responsible for deciding what level
-of discretization is adequate for the problem at hand.
+of spatial discretization is adequate for the problem at hand.
 
 \Cref{eq:depletion} simply states that the rate of change of $N_i$ is equal to
 the production rate minus the loss rate. Because the equation for $N_i$ depends
@@ -208,13 +208,14 @@ solution,
 The exponential of a matrix $\vect{X}$ is defined by the power series
 expansion
 \begin{equation}
-    \exp(\vect{X}) = \sum\limits_{k=0}^\infty \frac{\vect{X}^k}{k!}
+  \exp(\vect{X}) = \sum\limits_{k=0}^\infty \frac{\vect{X}^k}{k!}
 \end{equation}
-where $\vect{X}^0 = \vect{I}$. Most numerical methods for solving
-\cref{eq:depletion-matrix} involve two separate components:
+where $\vect{X}^0 = \vect{I}$. Solving \cref{eq:depletion-matrix} usually
+involves two separate components:
 \begin{enumerate}
-  \item Approximating \cref{eq:depletion-matrix} in a form that involves taking
-  one or more matrix exponentials, and
+  \item Use of a numerical method to integrate \cref{eq:depletion-matrix}
+  forward in time, usually in a form that involves taking one or more matrix
+  exponentials, and
   \item Evaluating the matrix exponential or, equivalently, the action of a
   matrix exponential on a vector.
 \end{enumerate}
@@ -225,17 +226,17 @@ us now consider how each of these components are treated in OpenMC.
 \label{sec:time_integration}
 
 Because an analytical solution to \cref{eq:depletion-matrix} is not available,
-one must resort to using a numerical method that generates approximation
-solutions in discrete increments. In general, the problem we need to solve then
-is: given $\vect{n}_i \equiv \vect{n}(t_i)$, what is the value of
-$\vect{n}_{i+1} \equiv \vect{n}(t_{i+1}) = \vect{n}(t_i + h)$, with $h$
-being the step size? Without loss of generality, we shall choose $t_i=0$ as it
-makes the presentation of various methods simpler.
+one must resort to using a numerical method that generates approximate solutions
+in discrete increments. The problem we need to solve then is: given $\vect{n}_i
+\equiv \vect{n}(t_i)$, what is the value of $\vect{n}_{i+1} \equiv
+\vect{n}(t_{i+1}) = \vect{n}(t_i + h)$, with $h$ being the step size? Without
+loss of generality, we shall choose $t_i=0$ as it makes the presentation of
+various methods simpler.
 
 OpenMC doesn't rely on a single time integration method but instead has several
 methods available that the user can choose. In the following sections, we
 outline the available methods in OpenMC, several of which have not been
-described in the literature.
+previously described in the literature.
 
 \subsubsection{Predictor Method}
 
@@ -245,16 +246,17 @@ $\vect{A}$ is constant over the timestep and assumes the value at the
 beginning of the step. The solution then follows directly from
 \cref{eq:constant-A}:
 \begin{equation}
-    \vect{n}_{i+1} = \exp\left(h\vect{A}(\vect{n}_i) \right) \vect{n}_i.
+  \label{eq:predictor}
+  \vect{n}_{i+1} = \exp\left(h\vect{A}(\vect{n}_i) \right) \vect{n}_i.
 \end{equation}
 The end-of-step composition is thus ``predicted'' by the reaction rates at the
 beginning of the step. This method has the virtue of requiring a single
 transport solution and a single matrix exponential per timestep but is only
 first-order accurate.
 
-\subsubsection{Predictor-Corrector Methods}
+\subsubsection{predictor--Corrector Methods}
 
-A series of \emph{predictor-corrector} methods that use multiple stages offer
+A series of \emph{predictor--corrector} methods that use multiple stages offer
 improved accuracy over the predictor method. The simplest of these methods is
 the CE/CM algorithm, which is the default algorithm used in
 MCNP6~\citep{fensin2006tans}. In this method, $\vect{A}$ is evaluated at the
@@ -271,7 +273,7 @@ This method requires two transport solutions and two matrix exponential solves
 per timestep (twice as expensive as the predictor method) and is second-order
 accurate.
 
-More sophisticated predictor-corrector methods have been introduced by
+More sophisticated predictor--corrector methods have been introduced by
 \citet{isotalo2011ane2,isotalo2011ane3}. In the CE/LI (constant extrapolation,
 linear interpolation) method, the end-of-step composition is first predicted
 using $\vect{A}(\vect{n}_i)$:
@@ -319,7 +321,7 @@ is, if we divide the timestep into $m$ substeps, the solution is given by
 While using substeps is a reasonable approach for solving
 \cref{eq:linear-ode}, there are other methods as well. For example, some
 codes use a backward differentiation formula rather than a method based on an
-exponential integrator~\cite{carpenter2009mc,hykes2017mc,sublet2017nds}.
+exponential integrator~\citep{carpenter2009mc,hykes2017mc,sublet2017nds}.
 
 \subsubsection{Magnus expansion integrators}
 
@@ -401,8 +403,8 @@ is performed using the fourth-order commutator-free Magnus integrator based on
 \subsubsection{Lie Group Integrator}
 
 OpenMC also includes an integrator based on a commutator-free Lie group
-method~\citep{celledoni2004fgcs}. In particular, a fourth-order scheme called
-CF4 is used that is given as
+integration method~\citep{celledoni2004fgcs}. In particular, a fourth-order
+scheme called CF4 is used that is given as
 \begin{equation}
   \begin{split}
     \vect{A}_1 &= h\vect{A}(\vect{n}_0) \\
@@ -423,15 +425,74 @@ used without sacrificing accuracy. For example, on a test problem based on a
 allowed 20 day timesteps while still achieving an accuracy of of 0.1\% on the
 $^{157}$Gd number density~\citep{josey2017phd}.
 
+\subsubsection{Extended Predictor--Corrector Methods}
+
+One option to improve on the traditional predictor--corrector methods is to add
+intermediate steps at which $\vect{A}$ is evaluated and combine them in such a
+way as to reduce the error of the solution. The general method would take the
+following form:
+\begin{equation}
+  \label{eq:epc}
+  \begin{split}
+    \hat{\vect{n}}_1 &= \vect{n}_i \\
+    \hat{\vect{n}}_k &= \exp \left( h \sum_{j=1}^{k-1} a_{ij} \vect{A}(\hat{\vect{n}}_j) \right) \vect{n}_i \\
+    \vect{n}_{i+1} &= \exp \left( h \sum_{j=1}^{s} b_{j} \vect{A}(\hat{\vect{n}}_j) \right) \vect{n}_i
+  \end{split}
+\end{equation}
+Noting that the coefficients in \cref{eq:epc} can be arranged in a Butcher
+tableau, \citet{josey2016jcp} proposed using the coefficients for the classic
+fourth Runge--Kutta method:
+\begin{equation}
+  \begin{split}
+    \vect{A}_1 &= h\vect{A}(\vect{n}_0) \\
+    \hat{\vect{n}}_1 &= \exp \left ( \frac{\vect{A}_1}{2} \right ) \\
+    \vect{A}_2 &= h\vect{A}(\hat{\vect{n}}_1) \\
+    \hat{\vect{n}}_2 &= \exp \left ( \frac{\vect{A}_2}{2} \right ) \\
+    \vect{A}_3 &= h \vect{A}(\hat{\vect{n}}_2) \\
+    \hat{\vect{n}}_3 &= \exp \left ( \vect{A}_3 \right ) \\
+    \vect{A}_4 &= h\vect{A}(\hat{\vect{n}}_3) \\
+    \vect{n}_{i+1} &= \exp \left ( \frac{\vect{A}_1}{6} + \frac{\vect{A}_2}{3}
+      + \frac{\vect{A}_3}{3} + \frac{\vect{A}_4}{6} \right ) \vect{n}_i.
+  \end{split}
+\end{equation}
+
 \subsubsection{Stochastic Implicit Euler Integrators}
 
+All of the integration methods discussed thus far are explicit methods that are
+only conditionally stable. There are many well-documented cases where
+oscillatory behavior and diverging solutions have been observed. To address
+this, \citet{dufek2013ane} proposed an implicit-Euler-like method that is
+unconditionally stable. The main idea is to replace $\vect{A}(\vect{n}_i)$ with
+$\vect{A}(\vect{n}_{i+1})$ in \cref{eq:predictor}:
+\begin{equation}
+  \label{eq:implicit}
+  \vect{n}_{i=1} = \exp \left( h\vect{A}(\vect{n}_{i+1}) \right) \vect{n}_i.
+\end{equation}
+This results in a non-linear equation for $\vect{n}_{i+1}$ that can't be solved
+directly. However, it is possible to solve for $\vect{n}_{i+1}$ using a
+fixed-point iteration. \citet{dufek2013ane} utilized a stochastic approximation
+based on the Robbins-Monro algorithm~\citep{robbins1951ams} in order to
+guarantee convergence of the fixed-point iteration while accounting for
+stochasticity in the MC transport solver.
+
+The major downside of an algorithm based on \cref{eq:implicit} is that, like the
+predictor method, it is only first-order accurate. Implicit methods have also
+been applied to higher-order
+algorithms~\citep{kotlyar2014ane,kotlyar2016ane,cosgrove2020ane}, thereby
+obtaining methods that are unconditionally stable and accurate with longer
+timesteps. In OpenMC, stochastic implicit versions of the CE/LI and LE/QI
+methods have also been implemented. The basis for the algorithm is to iterate on
+$\vect{n}_{i+1}^p$ used in \cref{eq:linear-interp}, obtaining progressively
+better estimates that are then used to solve \cref{eq:linear-ode}. A full
+discussion of the algorithm and its performance and tradeoffs can be found in
+\citep{josey2017phd}.
 
 \subsubsection{Summary}
 
 OpenMC does not rely on a single time integration method but rather has several
 classes that implement different algorithms. Generally, there is a tradeoff
 between the accuracy of the method, the computational expense, and the memory
-requirements. When a MC code is used, the expense is almost entirely by the time
+requirements. When a MC code is used, the expense is dominated by the time
 to compute the transport solution, i.e., to evaluate $\vect{A}$ for a given
 $\vect{n}$. Thus, the cost of a method scales with the number of $\vect{A}$
 evaluations that are performed per timestep. On the other hand, methods that
@@ -514,7 +575,7 @@ created by UChicago Argonne, LLC, operator of Argonne National Laboratory under
 contract DE-AC02-06CH11357.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section*{References}
+%\section*{References}
 
 \bibliographystyle{elsarticle-harv}
 \bibliography{references}
