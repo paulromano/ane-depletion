@@ -15,6 +15,7 @@
 \usepackage{algpseudocode}
 \usepackage{siunitx}
 \usepackage{multirow}
+\usepackage{upgreek}
 
 \sisetup{list-final-separator = {, and }}
 
@@ -522,9 +523,11 @@ exponential is approximated as
 where $k$ is the order of the approximation and $\alpha_0$,
 $\widetilde{\alpha}_\ell$, and $\theta_\ell$ are coefficients that have been
 tabulated for orders up to $k=48$. Rather than computing the full approximation
-and then multiplying it by a vector, the following algorithm\footnote{The
-original description of the algorithm presented by \citet{pusa2016nse} contains
-a typo.} is used to incrementally apply the terms within the product:
+and then multiplying it by a vector, \cref{alg:cram}\footnote{The original
+description of the algorithm presented by \citet{pusa2016nse} contains a typo.}
+is used to incrementally apply the terms within the product. The $k$th order
+approximation for CRAM requires solving $k/2$ sparse linear systems. OpenMC
+relies on functionality from scipy.sparse.linalg for solving the linear system.
 \begin{algorithm}[H]
   \caption{Incomplete partial fraction form of CRAM.}
   \label{alg:cram}
@@ -537,14 +540,176 @@ a typo.} is used to incrementally apply the terms within the product:
     \State $\vect{n} \gets \alpha_0 \vect{n}$
   \end{algorithmic}
 \end{algorithm}
-The $k$th order approximation for CRAM requires solving $k/2$ sparse linear
-systems. OpenMC relies on functionality from scipy.sparse.linalg for solving the
-linear systems.
+
+\subsection{Nuclear Data Considerations}
+
+In principle, using CRAM for evaluating matrix exponentials is fairly simple:
+construct the burnup matrix at various times and solve a set of sparse linear
+systems. However, constructing the burnup matrix, $\vect{A}$, involves not only
+solving the transport equation to estimate nuclear reaction rates but also a
+series of choices about what data to include.
+
+\subsubsection{Depletion Chain Generation}
+\label{sec:depletion-chain}
+
+In OpenMC, the burnup matrix is constructed based on data inside of a
+\emph{depletion chain} file, which includes fundamental data gathered from ENDF
+incident neutron, decay, and fission product yield sublibraries. For each
+nuclide, this file includes:
+\begin{itemize}
+  \item What transmutation reactions are possible, their Q values, and their products;
+  \item If a nuclide is not stable, what decay modes are possible, their
+  branching ratios, and their products; and
+  \item If a nuclide is fissionable, the fission products yields at any number
+  of incident neutron energies.
+\end{itemize}
+
+Depletion chains can be automatically created in the Python API in the following
+manner. First, the user supplies a list of ENDF incident neutron, decay, and
+fission product yield sublibrary files. The incident neutron files are used to
+determine what nuclear reactions result in transmutation and what the
+corresponding Q values of the reactions are. The decay files are used to
+determine the half-life and possible decay modes of nuclides that are unstable.
+The fission product yield sublibraries are used to determine what fission
+products are produced when a fission reaction occurs. This information is then
+aggregated and written to an XML file that serves as the depletion chain file
+that is used at runtime to construct a burnup matrix.
+
+In some cases, decay or reaction products appear that do not actually exist in
+the decay sublibrary files. OpenMC uses a set of heuristics to find a suitable
+replacement. First, if the atomic number of the missing product is greater than
+98, it is assumed that the product undergoes alpha decay. Otherwise, for a given
+product, OpenMC will determine the mass number of the isotope of that element
+that has the longest half-life. If the mass number of the missing product is
+less than the mass number of the longest-lived isotope, it is assumed that the
+nuclide will undergo a $\upbeta^+$ decay. Conversely, if the mass number is
+larger than the mass number of the longest-lived isotope, it is assumed that the
+nuclide will undergo a $\upbeta^-$ decay. Once the replacement nuclide has been
+determined, OpenMC will check again if it exists in the decay sublibrary files.
+If not, the process is repeated.
+
+Using all incident neutron, decay, and fission product yield sublibrary files
+from an ENDF-format library, such as ENDF/B-VIII.0, results in a \emph{full}
+depletion chain that typically includes thousands of nuclides. Because the use
+of a chain with $n$ nuclides will result in an $n\times n$ burnup matrix, there
+is an incentive to reduce the number of nuclides in the depletion chain to
+minimize both the size of the burnup matrix and the number of nuclides that are
+tracked during a transport solve. The depletion chain class in OpenMC's Python
+API includes a method for automatically reducing the size of the chain. Starting
+with a set of nuclides that must be included, the method will recursively go
+through all decay and reaction modes to determine what products may be produced.
+Using this method on the ENDF/B-VII.1 library reduces the total number of
+nuclides in the depletion chain from 3,820 nuclides to XXX.
+
+In addition to the full depletion chain, a simplified depletion chain based on
+the VERA depletion benchmark specification~\cite{kim2015casl} was created and
+made available for users at \href{https://openmc.org}. This chain includes 223
+nuclides and has adjusted branching ratios for some nuclides to preserve
+accuracy of nuclide production rates.
+
+\subsubsection{Transmutation Reactions}
+
+OpenMC will setup tallies in a problem based on what transmutation reactions are
+available in a depletion chain file, so any arbitrary number of transmutation
+reactions can be tracked. By default, the automatic depletion chain generation
+described in \cref{sec:depletion-chain} will include the following transmutation
+reactions: fission, (n,$\gamma$), (n,2n), (n,3n), (n,4n), (n,p), and
+(n,$\alpha$). While this is suitable for fission applications, fusion
+applications may require a wider set of transmutation reactions to be tracked.
+
+\subsubsection{Capture Branching Ratios}
+
+(n,$\gamma$) reactions may result in a product nucleus being in either the
+ground state or an excited state. If the excited state is a metastable state
+(having an unusually long half-life), it is important to account for this
+difference during depletion. The most well-known example is capture in
+$^{241}$Am, which can produce either $^{242}$Am or $^{242m}$Am. Because the
+metastable state has a significantly longer half-life than the ground state, it
+is important to account for the branching of the capture reaction in $^{241}$Am
+to accurately predict the production of higher actinides~\citep{haeck2012nse}.
+This is complicated by the fact that the branching ratio may depend on the
+incident neutron energy causing capture.
+
+OpenMC does not currently allow energy-dependent capture branching ratios.
+However, the depletion chain file does allow a reaction to be listed multiple
+times with different branching ratios that result in different products.
+Spectrum-averaged capture branching ratios have been computed in LWR and SFR
+spectra and are available at \href{https://openmc.org/depletion-chains}. Within
+the Python API, the class representing a depletion chain allows branching ratios
+to be easily retrieved and changed. We note that while this treatment doesn't
+accurately account for the change in the capture branching ratio with increasing
+burnup (due to spectral changes), these changes are currently much smaller than
+the differences in capture branching ratios between nuclear data evaluations.
+
+\subsubsection{Fission Product Yields}
+
+Like capture branching ratios, fission product yields (FPYs) also depend on the
+incident neutron energy. ENDF fission product yield sublibraries typically
+include yields tabulated at two or three energies (thermal, fast, and fusion
+energies). Complicating matters is the fact that while these data are specified
+for a single energy, they actually represent the observed FPYs for a spectrum of
+energies (characterized by a single point). For example, FPYs are often given at
+\SI{0.0253}{\electronvolt}, but this actually represents the observed FPY under
+a thermal neutron spectrum. The ENDF-6 formats manual~\citep{trkov2018bnl}
+recommends using linear-linear interpolation between energy points. However, at
+the end of a transport solve, we typically have a one-group or multigroup
+fission reaction rate---it's not clear how one should use this information to
+calculate an effective FPY.
+
+Different codes have adopted different approaches in how to handle the energy
+dependence of FPYs. In ORIGEN, the average neutron energy causing fission is
+calculated, and FPYs are interpolated using this average
+energy~\citep{gauld2011nt}. In MCNP, the fission rate is tallied over a few
+energy groups (thermal, fast, and high energy), and the energy group that
+contains the majority of fissions is used to select appropriate
+FPYs~\citep{fensin2008nt}. In Serpent, a linear interpolation factor is scored
+based on the neutron energy causing fission in relationship to the energy points
+at which FPY are tabulated; the interpolation factor is then used to calculate
+an effective FPY~\citep{kunchev2019mc}.
+
+Rather than choose a single method, OpenMC includes three methods for treating
+the energy dependence of FPY. In the first method, FPY data corresponding to a
+specific energy is manually selected. This approach may be appropriate if it is
+known that neutrons in the system under consideration have a typical thermal,
+fast, or fusion energy spectrum. In the second method, fission rates are tallied
+above and below a specified cutoff energy. Then, thermal FPYs are used for all
+fissions below the cutoff energy, and fast FPYs are used for all fissions above
+the cutoff energy. In the third method, the average energy at which fission
+events occur is tallied,
+\begin{equation}
+  \bar{E} = \frac{\int_0^\infty dE \; E \sigma_f(E)\phi(E)}{\int_0^\infty \sigma_f(E) \phi(E)},
+\end{equation}
+where $\sigma_f$ is the microscopic fission cross section and $\phi$ is the
+neutron flux. An effective FPY is then calculated by linearly interpolating
+between tabulated FPYs using the average energy. This approach is effectively
+the same as that used by ORIGEN~\citep{gauld2011nt}.
+
+\subsubsection{Power Normalization}
+
+The reaction rates calculated by OpenMC are given in units of reactions per
+source particle. For depletion, it is necessary to compute an absolute reaction
+rate in reactions per second. To do so, the total observed heating in the system
+is determined, and then the ratio of the system power to the observed heating is
+used as a normalization factor on the reaction rates. OpenMC allows the total
+heating to be determined by two different methods. In the first method, fission
+reaction rates are multiplied by constant Q values in the depletion chain file
+to estimate the total heating. This method is particularly useful for making
+inter-code comparisons, where one must ensure that the same Q values for fission
+are applied. In the second method, the actual heating rate is tallied over the
+entire system (separate from the tally for transmutation reaction rates). This
+method makes it possible to account for the energy dependence of the fission
+energy release data as well as the fact that neutrons and photons may leak out
+of the system, carrying away their energy with them. The latter effect may be
+particularly important for small, leaky systems.
 
 \subsection{Implementation}
 
-In-memory handling through Python API. This allows time loading nuclear data to
-be amortized since it only needs to be done once.
+Class organization with Operator and Integrators separate. Use of shared library
+and in-memory handling through Python API. This allows time loading nuclear data
+to be amortized since it only needs to be done once.
+
+Implementation of depletion in Python. Relying on scipy sparse solve for the
+CRAM system. Parallelization through Python multiprocessing pool.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
@@ -557,8 +722,6 @@ $S(\alpha,\beta)$, Serpent is not capable of handling continuous format, so the
 file from ENDF/B-VII.0 was used. The evaluation didn't change between VII.0 and
 VII.1, but the processing was different. For Serpent, decay and neutron fission
 yield sublibraries are concatenated.
-
-\subsection{}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
