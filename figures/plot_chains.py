@@ -16,8 +16,14 @@ mpl.rcParams['savefig.bbox'] = 'tight'
 mpl.rcParams['font.size'] = 12.0
 
 chain_full = openmc.deplete.Chain.from_xml('/home/romano/openmc-data/depletion/chain_endfb71_pwr.xml')
-chain_reduced = openmc.deplete.Chain.from_xml('/home/romano/openmc-data/depletion/chain_reduced2_pwr.xml')
 chain_casl = openmc.deplete.Chain.from_xml('/home/romano/openmc-data/depletion/chain_casl_pwr.xml')
+
+stable = [
+    nuc.name
+    for nuc in chain_full.nuclides
+    if nuc.name != 'Er145' and (nuc.half_life is None or nuc.half_life > 1e15)
+]
+chain_reduced = chain_full.reduce(stable)
 
 def get_patch(z, a, **kwargs):
     n = a - z
