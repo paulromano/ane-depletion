@@ -319,10 +319,10 @@ is, if we divide the timestep into $m$ substeps, the solution is given by
     \cdots \exp\left(\vect{A}_1\right) \vect{n}_i.
   \end{split}
 \end{equation}
-While using substeps is a reasonable approach for solving
-\cref{eq:linear-ode}, there are other methods as well. For example, some
-codes use a backward differentiation formula rather than a method based on an
-exponential integrator~\citep{carpenter2009mc,hykes2017mc,sublet2017nds}.
+While using substeps is a reasonable approach for solving \cref{eq:linear-ode},
+there are other methods as well. For example, some codes use a backward
+differentiation formula rather than a method based on an exponential
+integrator~\citep{carpenter2009mc,hykes2017mc,sublet2017nds}.
 
 \subsubsection{Magnus expansion integrators}
 
@@ -598,14 +598,23 @@ tracked during a transport solve. The depletion chain class in OpenMC's Python
 API includes a method for automatically reducing the size of the chain. Starting
 with a set of nuclides that must be included, the method will recursively go
 through all decay and reaction modes to determine what products may be produced.
-Using this method on the ENDF/B-VII.1 library reduces the total number of
-nuclides in the depletion chain from 3,820 nuclides to XXX.
+Using this method on the ENDF/B-VII.1 library starting from a list of all stable
+or very long lived (half-life greater than $10^{15}$ sec) nuclides reduces the
+total number of nuclides in the depletion chain from 3,820 to 1,693.
 
 In addition to the full depletion chain, a simplified depletion chain based on
 the VERA depletion benchmark specification~\cite{kim2015casl} was created and
-made available for users at \href{https://openmc.org}. This chain includes 223
+made available for users at \url{https://openmc.org}. This chain includes 223
 nuclides and has adjusted branching ratios for some nuclides to preserve
-accuracy of nuclide production rates.
+accuracy of nuclide production rates. \Cref{fig:chains} shows which nuclides are
+included in each of the depletion chains.
+\begin{figure}
+  \centering
+  \includegraphics[width=4in]{figures/chains.pdf}
+  \caption{Table of nuclides showing which nuclides are included in each of the
+    depletion chains based on ENDF/B-VII.1.}
+  \label{fig:chains}
+\end{figure}
 
 \subsubsection{Transmutation Reactions}
 
@@ -634,7 +643,7 @@ OpenMC does not currently allow energy-dependent capture branching ratios.
 However, the depletion chain file does allow a reaction to be listed multiple
 times with different branching ratios that result in different products.
 Spectrum-averaged capture branching ratios have been computed in LWR and SFR
-spectra and are available at \href{https://openmc.org/depletion-chains}. Within
+spectra and are available at \url{https://openmc.org/depletion-chains}. Within
 the Python API, the class representing a depletion chain allows branching ratios
 to be easily retrieved and changed. We note that while this treatment doesn't
 accurately account for the change in the capture branching ratio with increasing
@@ -662,10 +671,10 @@ calculated, and FPYs are interpolated using this average
 energy~\citep{gauld2011nt}. In MCNP, the fission rate is tallied over a few
 energy groups (thermal, fast, and high energy), and the energy group that
 contains the majority of fissions is used to select appropriate
-FPYs~\citep{fensin2008nt}. In Serpent, a linear interpolation factor is scored
-based on the neutron energy causing fission in relationship to the energy points
-at which FPY are tabulated; the interpolation factor is then used to calculate
-an effective FPY~\citep{kunchev2019mc}.
+FPYs~\citep{fensin2008nt,fensin2011lanl}. In Serpent, a linear interpolation
+factor is scored based on the neutron energy causing fission in relationship to
+the energy points at which FPY are tabulated; the interpolation factor is then
+used to calculate an effective FPY~\citep{kunchev2019mc}.
 
 Rather than choose a single method, OpenMC includes three methods for treating
 the energy dependence of FPY. In the first method, FPY data corresponding to a
@@ -704,12 +713,87 @@ particularly important for small, leaky systems.
 
 \subsection{Implementation}
 
-Class organization with Operator and Integrators separate. Use of shared library
-and in-memory handling through Python API. This allows time loading nuclear data
-to be amortized since it only needs to be done once.
+OpenMC's core particle transport solver is written in C++ and is built as a
+single executable. Most of the user-facing code, however, is written in Python.
+Generally, to run OpenMC, a user writes a Python script that utilizes classes
+and functions defined as part of an application programming interface (API) to
+generate XML input files that are then read by the executable. On top of this,
+OpenMC is also built as a shared library with a C++ API that can be called by
+external programs. OpenMC's Python API includes bindings to the C++ API; this
+enables a single run to be broken up into individual components. For example, a
+function call from the Python bindings to the C++ API can initialize the solver
+(reading inputs, loading cross sections, etc.) without actually performing a
+simulation. A separate function call can run the transport simulation. Further
+function calls allow a power user to obtain information about tally results
+directly in memory from the C++ API.
 
-Implementation of depletion in Python. Relying on scipy sparse solve for the
-CRAM system. Parallelization through Python multiprocessing pool.
+OpenMC's depletion capability is implemented entirely in Python as the
+\texttt{openmc.deplete} module. This module relies on the Python bindings to the
+C++ API to initialize OpenMC, create tallies necessary for depletion, run
+transport simulations, and obtain tally results. This approach has two primary
+advantages. First, the time necessary to load cross sections is amortized
+because it only has to be performed once, as opposed to once per transport
+simulation. Second, using the Python bindings to the C++ API allows results to
+be read directly in memory rather than using filesystem I/O, which helps to
+minimizing overhead, particularly for large simulations.
+
+The \texttt{openmc.deplete} module is designed with three key abstract classes
+that represent the major components of the depletion solver. Each of the
+abstract classes themselves defines an interface, that is, a set of methods that
+a subclass must implement. First, the abstract \texttt{TransportOperator} class
+represents a particle transport solver. Subclasses of \texttt{TransportOperator}
+are required to implement a method that takes a list of nuclide densities to be
+used in the problem and a system power and returns the $k$-eigenvalue and the
+reaction rates resulting from the transport operator. Currently, there is a
+single subclass of \texttt{TransportOperator} that interfaces with the Python
+bindings to OpenMC's C++ API to call a tranport solve and obtain reaction rates.
+Once reaction rates are obtained, a separate depletion chain class (that is not
+abstract) uses them to construct the burnup matrix, $\vect{A}$, based on the
+data present in the depletion chain.
+
+The abstract \texttt{DepSystemSolver} class represents a solver for
+\cref{eq:depletion-matrix} when $\vect{A}$ is constant (a solver that can
+evaluate \cref{eq:constant-A}). Subclasses of \texttt{DepSystemSolver} are
+required to implement a method that takes the burnup matrix $\vect{A}$, an
+initial density vector $\vect{n}_0$, and a timestep size, and returns the
+resulting nuclide densities at the end of the step. The only subclass of
+\texttt{DepSystemSolver} at present is \texttt{IPFCramSolver}, which implements
+the IPF form of CRAM to evaluate \cref{eq:constant-A}. Because the CRAM method
+requires solving multiple sparse linear systems, this class relies on the
+third-party \texttt{scipy.sparse} package for performing a sparse linear solve
+(REF).
+
+The abstract \texttt{Integrator} class represents a time integration method.
+This class effectively orchestrates the coupled transport-depletion simulation.
+Subclasses of \texttt{Integrator} are required to implement a method that takes
+an initial vector of nuclide densities, reaction rates returned from an
+operator, a time interval, and a power, and returns the resulting nuclide
+densities at the end of the step. Thus, \texttt{Integrator} utilizes
+\texttt{TransportOperator} in order to obtain reaction rates given $\vect{n}$,
+and once the burnup matrix is constructed, it utilizes \texttt{DepSystemSolver}
+to deplete with a constant $\vect{A}$ as many times as is necessary. One example
+of a subclass of \texttt{Integrator} is \texttt{CECMIntegrator}, which
+implements the CE/CM method.
+
+The depletion system in OpenMC is designed to be modular. Although the only
+transport operator that is implemented is the OpenMC transport solver itself,
+the rest of the infrastructure (time integration methods, CRAM solver) does not
+rely on anything specific to OpenMC's transport solver, so one could in
+principle implement a class that utilizes a different transport solver (whether
+that be another Monte Carlo code or a deterministic code). Similarly, although
+\texttt{IPFCramSolver} is the only depletion system solver implemented, one
+could replace it with a different solver, for example, a solver based on
+backward differentiation formulas.
+
+Lastly, we note that when multiple depletable materials are present in a problem
+(thereby requiring multiple independent solutions of
+\cref{eq:depletion-matrix}), the work is fully parallelized over the available
+processes/threads. The third-party \texttt{mpi4py} Python package is used to
+distribute the material compositions among the participating MPI processes.
+Then, within each process, Python's \texttt{multiprocessing} standard-library
+module is used to distribute materials among threads within a single MPI
+process. This matches the distributed- and shared-memory parallelization scheme
+used in OpenMC's transport solver, which relies on MPI and OpenMP.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
