@@ -625,6 +625,8 @@ described in \cref{sec:depletion-chain} will include the following transmutation
 reactions: fission, (n,$\gamma$), (n,2n), (n,3n), (n,4n), (n,p), and
 (n,$\alpha$). While this is suitable for fission applications, fusion
 applications may require a wider set of transmutation reactions to be tracked.
+Currently, reaction rates are determined by directly tallying the reaction rates
+using a tracklength estimator.
 
 \subsubsection{Capture Branching Ratios}
 
@@ -632,23 +634,24 @@ applications may require a wider set of transmutation reactions to be tracked.
 ground state or an excited state. If the excited state is a metastable state
 (having an unusually long half-life), it is important to account for this
 difference during depletion. The most well-known example is capture in
-$^{241}$Am, which can produce either $^{242}$Am or $^{242m}$Am. Because the
+$^{241}$Am, which can produce either $^{242}$Am or $^{242\text{m}}$Am. Because the
 metastable state has a significantly longer half-life than the ground state, it
 is important to account for the branching of the capture reaction in $^{241}$Am
 to accurately predict the production of higher actinides~\citep{haeck2012nse}.
 This is complicated by the fact that the branching ratio may depend on the
 incident neutron energy causing capture.
 
-OpenMC does not currently allow energy-dependent capture branching ratios.
-However, the depletion chain file does allow a reaction to be listed multiple
-times with different branching ratios that result in different products.
-Spectrum-averaged capture branching ratios have been computed in LWR and SFR
-spectra and are available at \url{https://openmc.org/depletion-chains}. Within
-the Python API, the class representing a depletion chain allows branching ratios
-to be easily retrieved and changed. We note that while this treatment doesn't
-accurately account for the change in the capture branching ratio with increasing
-burnup (due to spectral changes), these changes are currently much smaller than
-the differences in capture branching ratios between nuclear data evaluations.
+OpenMC does not currently implement a method to handle energy-dependent capture
+branching ratios directly. However, the depletion chain file does allow a
+reaction to be listed multiple times with different branching ratios that result
+in different products. Spectrum-averaged capture branching ratios have been
+computed in LWR and SFR spectra and are available at
+\url{https://openmc.org/depletion-chains}. Within the Python API, the class
+representing a depletion chain allows branching ratios to be easily retrieved
+and changed. We note that while this treatment doesn't accurately account for
+the change in the capture branching ratio with increasing burnup (due to
+spectral changes), these changes are generally much smaller than the differences
+in capture branching ratios between nuclear data evaluations.
 
 \subsubsection{Fission Product Yields}
 
@@ -659,11 +662,11 @@ energies). Complicating matters is the fact that while these data are specified
 for a single energy, they actually represent the observed FPYs for a spectrum of
 energies (characterized by a single point). For example, FPYs are often given at
 \SI{0.0253}{\electronvolt}, but this actually represents the observed FPY under
-a thermal neutron spectrum. The ENDF-6 formats manual~\citep{trkov2018bnl}
-recommends using linear-linear interpolation between energy points. However, at
-the end of a transport solve, we typically have a one-group or multigroup
-fission reaction rate---it's not clear how one should use this information to
-calculate an effective FPY.
+a thermal neutron spectrum that contains a continuum of energies. The ENDF-6
+formats manual~\citep{trkov2018bnl} recommends using linear-linear interpolation
+between energy points. However, at the end of a transport solve, we typically
+have a one-group or multigroup fission reaction rate---it's not clear how one
+should use this information to calculate an effective FPY.
 
 Different codes have adopted different approaches in how to handle the energy
 dependence of FPYs. In ORIGEN, the average neutron energy causing fission is
@@ -677,7 +680,7 @@ the energy points at which FPY are tabulated; the interpolation factor is then
 used to calculate an effective FPY~\citep{kunchev2019mc}.
 
 Rather than choose a single method, OpenMC includes three methods for treating
-the energy dependence of FPY. In the first method, FPY data corresponding to a
+the energy dependence of FPYs. In the first method, FPY data corresponding to a
 specific energy is manually selected. This approach may be appropriate if it is
 known that neutrons in the system under consideration have a typical thermal,
 fast, or fusion energy spectrum. In the second method, fission rates are tallied
@@ -760,8 +763,8 @@ resulting nuclide densities at the end of the step. The only subclass of
 \texttt{DepSystemSolver} at present is \texttt{IPFCramSolver}, which implements
 the IPF form of CRAM to evaluate \cref{eq:constant-A}. Because the CRAM method
 requires solving multiple sparse linear systems, this class relies on the
-third-party \texttt{scipy.sparse} package for performing a sparse linear solve
-(REF).
+third-party \texttt{scipy.sparse} package~\cite{virtanen2020nm} for performing a
+sparse linear solve.
 
 The abstract \texttt{Integrator} class represents a time integration method.
 This class effectively orchestrates the coupled transport-depletion simulation.
@@ -806,6 +809,10 @@ $S(\alpha,\beta)$, Serpent is not capable of handling continuous format, so the
 file from ENDF/B-VII.0 was used. The evaluation didn't change between VII.0 and
 VII.1, but the processing was different. For Serpent, decay and neutron fission
 yield sublibraries are concatenated.
+
+\subsection{PWR Pincell}
+
+\subsection{SFR Assembly}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
