@@ -256,7 +256,7 @@ beginning of the step. This method has the virtue of requiring a single
 transport solution and a single matrix exponential per timestep but is only
 first-order accurate.
 
-\subsubsection{predictor--Corrector Methods}
+\subsubsection{Predictor--Corrector Methods}
 
 A series of \emph{predictor--corrector} methods that use multiple stages offer
 improved accuracy over the predictor method. The simplest of these methods is
@@ -1234,16 +1234,86 @@ $^{85}$Kr being the notable outliers.
 \section{Conclusions}
 \label{sec:conclusions}
 
-Discuss temperature dependence and probability tables in SFR model.
+A new depletion solver has been implemented in the OpenMC Monte Carlo particle
+transport code. The depletion solver is implemented primarily in Python 3 and
+interfaces with OpenMC's transport solver through Python bindings to an
+underlying C++ API, which enables data transfers to happen in memory rather than
+through filesystem I/O. The design of the depletion solver relies on a set of
+abstract classes that provide modularity and separation between difference
+components, including the time integration methods, the matrix exponential
+solver, and the transport operator. In principle, this modularity would allow
+the depletion system to be used with another transport code. Rather than relying
+on a single time integration method, OpenMC implements several time integration
+schemes including the predictor method, standard predictor-corrector methods,
+stochastic implicit Euler integrators, and several novel
+methods~\citep{josey2017phd, josey2017jcp}. To evaluate the matrix exponential,
+OpenMC relies on the incomplete partial fraction form of CRAM by default.
+
+To assess the accuracy of the new depletion solver, comparisons were made
+between OpenMC and Serpent on a PWR pincell model and an SFR assembly model.
+When the full depletion chain was used in OpenMC, the predictions of
+$k_\text{eff}$ agreed to within 20--30 pcm of that calculated by Serpent at all
+times in life for both the PWR and SFR model. Actinide concentrations were found
+to agree to a fraction of a percent, and most fission product concentrations
+were found to agree within 1\%. The few cases where fission product
+concentrations differed by a larger amount were found to be related to
+differences in the treatment of the energy dependence of FPYs. It is our sense
+that there is no consensus in the community as to what is the ``correct'' way of
+handling this energy dependence, so it is not possible to opine on whether one
+set of results is right or wrong. When the simplified CASL depletion chain was
+used in OpenMC, the accuracy of actinide and fission product concentrations did
+not change appreciably. The only nuclide for which a significant difference was
+observed was $^{85}$Kr; this difference can be explained by a cumulative yield
+in the ENDF/B-VII.1 FPY sublibrary that is inconsistent with the independent
+yields of precursors~\citep{pigni2015nds}. Because the CASL depletion chain
+results in a significantly lower runtime compared to the full depletion chain
+while still retaining accuracy, it is recommended for general use by OpenMC
+users.
+
+We found that when comparing results on the SFR assembly model, larger
+differences in $k_\text{eff}$ and isotopic concentrations were observed when
+unresolved resonance region probability tables were turned on. These differences
+were found to be related to how the temperature dependence of cross sections is
+treated in the unresolved resonance region. In OpenMC, when the temperature of a
+material is in between two temperatures at which probability tables are
+tabulated, statistical interpolation between the tables is performed. Serpent,
+on the other hand, uses probability tables at the lower tabulated temperature.
+For the SFR model, this results in lower parasitic neutron absorption in
+$^{238}$U, lower production of $^{239}$Pu, and ultimately a lower
+$k_\text{eff}$. After depleting for 360 days, there was a 100 pcm difference
+between OpenMC and Serpent due to this effect. Although this is not a huge
+difference, users who are simulating problems with a non-uniform temperature
+distribution should be aware of this behavior.
+
+Finally, we remark that although we did observe some differences between OpenMC
+and Serpent, most of the differences were related to deficiencies in the nuclear
+data itself. As a whole, the results demonstrate that when the same nuclear data
+and same methods are used in two independently developed codes, it is possible
+to obtain results in a depletion simulation that match within 10s of pcm on
+$k_\text{eff}$ and less than 1\% on isotopic concentrations.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{Acknowledgments}
+
+We gratefully acknowledge the OpenMC user community for providing early feedback
+and bug reports related to depletion that have helped improve the code. We wish
+to acknowledge Jaakko Lepp{\"{a}}nen (VTT) for providing the developmental
+version of Serpent 2.1.32 used in this work and for helping to shed light on the
+methods used in Serpent. We acknowledge Nicolas Stauff (ANL) for providing
+recommendations on a suitable SFR target problem.
 
 This research was supported by the Exascale Computing Project (17-SC-20-SC), a
 collaborative effort of the U.S. Department of Energy Office of Science and the
 National Nuclear Security Administration. The submitted manuscript has been
 created by UChicago Argonne, LLC, operator of Argonne National Laboratory under
 contract DE-AC02-06CH11357.
+
+We gratefully acknowledge the computing resources provided on Bebop, a
+high-performance computing cluster operated by the Laboratory Computing Resource
+Center at Argonne National Laboratory. This research made use of the resources
+of the High Performance Computing Center at Idaho National Laboratory, which is
+supported by the Office of Nuclear Energy of the U.S. Department of Energy and
+the Nuclear Science User Facilities under Contract No. DE-AC07-05ID14517.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\section*{References}
