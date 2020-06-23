@@ -10,6 +10,7 @@
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{float}
+\usepackage{subcaption}
 \usepackage{algorithm}
 \usepackage{algorithmicx}
 \usepackage{algpseudocode}
@@ -602,12 +603,12 @@ Using this method on the ENDF/B-VII.1 library starting from a list of all stable
 or very long lived (half-life greater than $10^{15}$ sec) nuclides reduces the
 total number of nuclides in the depletion chain from 3,820 to 1,693.
 
-In addition to the full depletion chain, a simplified depletion chain based on
-the VERA depletion benchmark specification~\cite{kim2015casl} was created and
-made available for users at \url{https://openmc.org}. This chain includes 223
-nuclides and has adjusted branching ratios for some nuclides to preserve
-accuracy of nuclide production rates. \Cref{fig:chains} shows which nuclides are
-included in each of the depletion chains.
+In addition to the full and reduced depletion chains, a simplified depletion
+chain based on the VERA depletion benchmark specification~\citep{kim2015casl}
+was created and made available for users at \url{https://openmc.org}. This chain
+includes 223 nuclides and has adjusted decay branching ratios for some nuclides
+to preserve the accuracy of nuclide production rates. \Cref{fig:chains} shows
+which nuclides are included in each of the depletion chains.
 \begin{figure}
   \centering
   \includegraphics[width=4in]{figures/chains.pdf}
@@ -654,6 +655,7 @@ spectral changes), these changes are generally much smaller than the differences
 in capture branching ratios between nuclear data evaluations.
 
 \subsubsection{Fission Product Yields}
+\label{sec:fpy}
 
 Like capture branching ratios, fission product yields (FPYs) also depend on the
 incident neutron energy. ENDF fission product yield sublibraries typically
@@ -763,8 +765,8 @@ resulting nuclide densities at the end of the step. The only subclass of
 \texttt{DepSystemSolver} at present is \texttt{IPFCramSolver}, which implements
 the IPF form of CRAM to evaluate \cref{eq:constant-A}. Because the CRAM method
 requires solving multiple sparse linear systems, this class relies on the
-third-party \texttt{scipy.sparse} package~\cite{virtanen2020nm} for performing a
-sparse linear solve.
+third-party \texttt{scipy.sparse} package~\citep{virtanen2020nm} for performing
+a sparse linear solve.
 
 The abstract \texttt{Integrator} class represents a time integration method.
 This class effectively orchestrates the coupled transport-depletion simulation.
@@ -802,15 +804,255 @@ used in OpenMC's transport solver, which relies on MPI and OpenMP.
 \section{Results}
 \label{sec:results}
 
+To validate the depletion solver in OpenMC, we have carried out simulations
+using the \texttt{openmc.deplete} module as well as Serpent 2.1.31 on two simple
+problems. The first problem is a pressurized water reactor (PWR) pincell and the
+second problem is a single assembly of a sodium-cooled fast reactor (SFR). These
+problems were selected to cover both thermal and fast neutron spectra.
+
+While comparison of simulation predictions to an experiment is a better means of
+ensuring fitness for a particular application, it is not without downsides.
+First, the presence of experimental uncertainties makes it hard to ascertain
+whether small differences are attributable to the uncertainties or errors in the
+code itself. In a cross-code comparison, if the same solution method and
+fundamental nuclear data are being used in both codes, one expects to obtain the
+same answer. Thus, even very minute differences may be indicative of a true
+problem in the method implementation in one of the codes.
+
 \subsection{Data Preparation}
 
-Using ENDF/B-VII.1 files from MCNP distribution. However, for light water
-$S(\alpha,\beta)$, Serpent is not capable of handling continuous format, so the
-file from ENDF/B-VII.0 was used. The evaluation didn't change between VII.0 and
-VII.1, but the processing was different. For Serpent, decay and neutron fission
-yield sublibraries are concatenated.
+Given the remarks above, it is of utmost importance to ensure that the same
+nuclear data are being used in a cross-code comparison. For a depletion
+simulation, we must ensure that the incident neutron cross sections and
+secondary angle/energy distributions, radioactive decay data, and fission
+product yields are the same for both codes. In the simulations performed, all
+data was based on the ENDF/B-VII.1 nuclear data library~\citep{chadwick2011nds}.
+Incident neutron cross sections from the ENDF/B-VII.1 library processed by the
+LANL nuclear data team~\citep{conlin2013lanl}, known as endf71x, were used for
+transport simulations in both OpenMC and Serpent. Serpent is able to use the ACE
+files from the endf71x library directly while OpenMC uses an HDF5 format that
+requires conversion of the ACE files first. For the PWR pincell problem,
+$S(\alpha,\beta)$ data is also needed for hydrogen in light water; because
+Serpent does not yet handle the continuous representation used in the ENDF71SaB
+library, the light water data from ENDF/B-VII.0 was used instead. We note that
+the light water evaluation didn't actually change between ENDF/B-VII.0 and
+ENDF/B-VII.1.
+
+In Serpent, the depletion solver relies directly on ENDF decay and FPY
+sublibrary files. Appropriate decay and FPY libraries for Serpent were thus
+formed by concatenating the ENDF files directly from the ENDF/B-VII.1
+distribution. For OpenMC, cases were run with the full, reduced, and CASL
+depletion chains based on ENDF/B-VII.1 decay and FPY sublibrary files.
+
+To ensure that OpenMC and Serpent perform power normalization in the same
+manner, the default fission heating values from Serpent were used in OpenMC. By
+default, the energy release per fission in $^{235}U$ in Serpent is set to
+\SI{202.27}{\mega\electronvolt}, and the values for other actinides is scaled
+based on the Q value for fission listed in MF=3 in the ENDF evaluation. Without
+the same heating values, the power normalization might result in OpenMC
+depleting materials too quickly or too slowly.
+
+Serpent uses energy-independent capture branching ratios by default that are
+based on the JEFF 3.1 activation file using a PWR flux spectrum. For the PWR
+problem, these energy-independent branching ratios were used in OpenMC. For the
+SFR problem, Serpent was used to first generate representative capture branching
+ratios in the fast flux spectrum using Serpent's energy-dependent capture
+branching ratio treatment. Then, the energy-independent branching ratios were
+set in both Serpent and OpenMC. As discussed in \cref{sec:fpy}, OpenMC also has
+several methods for treating the energy dependence of FPYs. The OpenMC
+simulations were carried out with the three different methods to see what effect
+they have on resulting isotopic compositions as compared with Serpent.
 
 \subsection{PWR Pincell}
+
+The PWR pincell problem is a single 2.4\% enriched PWR pincell from the BEAVRS
+benchmark~\citep{horelik2013mc,horelik2018mit}. Material compositions and
+dimensions from the BEAVRS benchmark were used without modification. The pincell
+extends to positive/negative infinity in the $z$ direction and has reflective
+boundary conditions in the $x$ and $y$ directions. A linear heating rate of
+\SI{174}{\watt\per\centi\meter} was used for power normalization. The pin was
+depleted to 50 MWd/kg using the following burnup schedule:
+\begin{itemize}
+  \item A single 0.1 MWd/kg, 0.4 MWd/kg, and 0.5 MWd/kg timesteps;
+  \item 1.0 MWd/kg timesteps out to a cumulative burnup of 10.0 MWd/kg;
+  \item 2.5 MWd/kg timesteps out to a cumulative burnup of 50.0 MWd/kg.
+\end{itemize}
+The short timesteps at the beginning are used to accurately capture the buildup
+of xenon isotopes. In both codes, the predictor method was used for time
+integration. While the predictor method is the least accurate time integration
+method, the purpose of the comparison is to confirm that OpenMC and Serpent
+produce comparable results, irrespective of the absolute values.
+
+Six coupled transport-depletion simulations were carried out with OpenMC to test
+a variety of combinations of depletion chains and methods for handling FPY
+energy dependence:
+\begin{table}
+
+\end{table}
+\begin{enumerate}
+  \item Full depletion chain, thermal FPYs
+  \item Full depletion chain, interpolated FPYs
+  \item Reduced depletion chain, thermal FPYs
+  \item CASL depletion chain, thermal FPYs
+  \item CASL depletion chain, FPYs based on cutoff method
+  \item CASL depletion chain, interpolated FPYs
+\end{enumerate}
+Because Serpent doesn't have an option for changing the depletion chain or the
+method for handling FPY energy dependence, a single coupled transport-depletion
+simulation with Serpent was carried out. For all simulations, 20 inactive
+batches, 200 active batches, and \num{3.6e6} particles per batch were used,
+which resulted in an uncertainty on the effective multiplication factor of about
+3--4 pcm.
+
+\Cref{fig:pwr-keff} shows the difference between $k_\text{eff}$ calculated by
+OpenMC and Serpent. The blue points correspond to results using the full
+depletion chain, the red points correspond to points using the reduced chain,
+and the green points correspond to results using the CASL chain. For each chain,
+the use of interpolated FPYs is denoted by circles and thermal FPYs by x's. At
+zero days, the difference in $k_\text{eff}$ between OpenMC and Serpent is not
+statistically significant. As the burnup increases, the difference for the full
+chain cases rises to about 20 pcm. The reduced chain case exhibits the exact
+same behavior as the full chain as one would expect. Use of the CASL chain
+results in a slightly larger difference between OpenMC and Serpent at 50 MWd/kg,
+about 40 pcm. We also see that for both the full and CASL chains, changing the
+method for handling FPY energy dependence doesn't appear to have much of an
+affect on $k_\text{eff}$, which is primarily driven by the prediction of
+actinide concentrations.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=4in]{figures/pwr_keff.pdf}
+  \caption{Difference in the effective multiplication factor, $k_\text{eff}$,
+  between OpenMC and Serpent for the PWR pincell model. While not shown, the one
+  standard deviation uncertainty in the difference is about 3.5 pcm.}
+  \label{fig:pwr-keff}
+\end{figure}
+
+\Cref{fig:pwr-actinides-full} shows the relative difference in predicted
+actinide concentrations between OpenMC and Serpent at four different burnup
+values. We see that most of the differences are less than 0.1\%, and all are
+within 0.15\%. The differences in $^{235}$U and $^{239}$Pu concentrations
+increase slightly with increasing burnup, which most likely accounts for the 20
+pcm difference observed for the full chain in \cref{fig:pwr-keff}. While not
+shown, the predicted actinide concentrations for the reduced chain are nearly
+identical to those observed for the full chain in \cref{fig:pwr-actinides-full}.
+\Cref{fig:pwr-actinides-casl} shows the differences in actinide concentrations
+using the CASL depletion chain. Because the CASL depletion chain differs from
+the full depletion chain primarily with respect to how fission products are
+treated, the differences reported in \cref{fig:pwr-actinides-casl} closely
+mirror those in \cref{fig:pwr-actinides-full}.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=4in]{figures/pwr/pwr_actinides_full.pdf}
+  \caption{Relative difference in actinide concetrations between OpenMC and
+  Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the full
+  depletion chain.}
+  \label{fig:pwr-actinides-full}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=4in]{figures/pwr/pwr_actinides_casl.pdf}
+  \caption{Relative difference in actinide concetrations between OpenMC and
+  Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the CASL
+  depletion chain.}
+  \label{fig:pwr-actinides-casl}
+\end{figure}
+
+The predicted concentration of fission products depends on both the depletion
+chain that is used and the method for handling the energy dependence of the FPY.
+We begin with results for the full depletion chain and interpolated FPYs, which
+most closely matches the method used in Serpent; \cref{fig:pwr-fp-full-average}
+shows the relative difference in fission product concentrations between OpenMC
+and Serpent for this case. Most of the differences are less than 0.2\%, and only
+a few fission products show differences up to 0.5\%.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=4in]{figures/pwr/pwr_fp_full_average.pdf}
+  \caption{Relative difference in fission product concetrations between OpenMC
+  and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
+  full depletion chain and interpolated FPYs.}
+  \label{fig:pwr-fp-full-average}
+\end{figure}
+
+\Cref{fig:pwr-fp-full-thermal} shows the predicted fission product concetrations
+when using the full depletion chain along with thermal FPYs. In this case,
+although most fission products are within 1\% of Serpent, they are
+systematically overpredicted other than a few nuclides. Because Serpent uses the
+average fission energy to interpolate between two sets of FPYs, the systematic
+difference is actually expected when using thermal FPYs in OpenMC. As the
+incident energy of a neutron causing fission increases, the ``saddle'' and
+``wings'' in the FPY curve tend to increase significantly, and the peaks around
+$A=95$ and $A=135$ tend to slightly decrease. This corresponds to exactly what
+is observed in \cref{fig:pwr-fp-full-thermal}. Because thermal FPYs were used in
+OpenMC for this case, we expect that fission products near one of the two peaks
+of the FPY curve will be slightly overpredicted relative to Serpent, and fission
+products away from the peak will be underpredicted. This can be confirmed for
+particular nuclides. Take, for example, $^{109}$Ag; in the $A=109$ mass chain,
+the nuclides with the highest independent yields are $^{109}$Tc and $^{109}$Mo.
+Both these nuclides have independent yields that increase significantly with
+increasing neutron energy. The same situation occurs for $^{129}$I, whose
+predominant precursor is $^{129}$Sn. The independent yields for these three
+precursor nuclides are shown in \cref{tab:fp-yields}.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=4in]{figures/pwr/pwr_fp_full_thermal.pdf}
+  \caption{Relative difference in fission product concetrations between OpenMC
+  and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
+  full depletion chain and thermal FPYs.}
+  \label{fig:pwr-fp-full-thermal}
+\end{figure}
+\begin{table}[htbp]
+  \centering
+  \caption{Independent yields of select fission products due to fission in
+  $^{235}$U (data from the ENDF/B-VII.1 FPY sublibrary).}
+  \label{tab:fp-yields}
+  \begin{tabular}{cccc}
+    \toprule
+    \textbf{Energy Spectrum} & \textbf{$^{109}$Tc} & \textbf{$^{109}$Mo} & \textbf{$^{129}$Sn} \\
+    \midrule
+    Thermal & 0.00013 & 0.00015 & 0.00230 \\
+    Fast & 0.00034 & 0.00042 & 0.00550 \\
+    Fusion & 0.00598 & 0.00109 & 0.01162 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\Cref{fig:pwr-fp-casl-average} shows the relative difference in predicted
+fission product concentrations between OpenMC and Serpent when using the CASL
+depletion chain and interpolated FPYs. As in \cref{fig:pwr-fp-full-average},
+almost all fission products are predicted to well within 1\% at 50 MWd/kg.
+However, in this case there is one clear outlier: $^{85}$Kr. Upon further
+investigation, it was determined that the root cause for this difference is the
+fact that the CASL depletion chain uses a cumulative yield for $^{85}$Kr, and
+the cumulative yield of $^{85}$Kr is known to be inconsistent with the
+independent yields of the $A=85$ mass chain~\cite{pigni2015nds}. Serpent relies
+solely on the independent yield in its depletion solver (as does the full
+depletion chain). Therefore, there is nothing inherently wrong with the CASL
+depletion chain or OpenMC; it is simply a matter of the underlying nuclear data
+being inconsistent. The 5\% underprediction of $^{85}$Kr is also likely
+responsible for the slightly higher difference in $k_\text{eff}$ for the CASL
+depletion chain shown in \cref{fig:pwr-keff}.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=4in]{figures/pwr/pwr_fp_casl_average.pdf}
+  \caption{Relative difference in fission product concetrations between OpenMC
+  and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
+  CASL depletion chain and interpolated FPYs.}
+  \label{fig:pwr-fp-casl-average}
+\end{figure}
+
+\Cref{fig:pwr-fp-casl-thermal} shows the relative difference in predicted in
+fission product concentrations when using the CASL depletion chain along with
+thermal FPYs. The results are quite close to those shown
+\cref{fig:pwr-fp-full-thermal}, with the exception of $^{85}$Kr for the
+aforementioned reasons.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=4in]{figures/pwr/pwr_fp_casl_thermal.pdf}
+  \caption{Relative difference in fission product concetrations between OpenMC
+  and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
+  CASL depletion chain and thermal FPYs.}
+  \label{fig:pwr-fp-casl-thermal}
+\end{figure}
 
 \subsection{SFR Assembly}
 
