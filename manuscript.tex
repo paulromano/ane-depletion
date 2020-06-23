@@ -62,11 +62,30 @@
 \address[tsinghua]{Institute of Nuclear and New Energy Technology, Tsinghua University, Beijing, China}
 
 \begin{abstract}
+  A depletion solver has been implemented in OpenMC and is described herein. The
+  depletion solver is implemented in Python and interfaces with OpenMC's
+  transport solver through a C++ API, which enables an in-memory
+  depletion--transport coupling. Multiple integration methods for advancing in
+  time have been implemented and exhibit tradeoffs in cost, accuracy, and memory
+  use. For all time integration methods, evaluation of the matrix exponential is
+  performed using the incomplete partial fraction form of the Chebyshev rational
+  approximation method.
 
+  Simulations of a PWR pincell and an SFR assembly were carried out with OpenMC
+  and Serpent. For both problems, the use of a high-fidelity depletion chain
+  results in predictions of $k_\text{eff}$ that agree within 20--30 pcm between
+  OpenMC and Serpent. Predicted actinide concentrations were found to agree to a
+  fraction of a percent, and most fission product concentrations were found to
+  agree within 1\%. The few cases where larger differences were observed can be
+  attributed either to differences in how the energy dependence of fission
+  product yields is handled or deficiencies in the nuclear data used. OpenMC
+  simulations of the PWR and SFR problems using a simplified 228 nuclide
+  depletion chain demonstrate that it achieves accuracy close to that of the
+  full, high-fidelity depletion chain.
 \end{abstract}
 
 \begin{keyword}
-  Monte Carlo, depletion
+  Monte Carlo, particle transport, depletion, transmutation
 \end{keyword}
 
 \maketitle
@@ -555,7 +574,7 @@ series of choices about what data to include.
 
 In OpenMC, the burnup matrix is constructed based on data inside of a
 \emph{depletion chain} file, which includes fundamental data gathered from ENDF
-incident neutron, decay, and fission product yield sublibraries. For each
+incident neutron, decay, and fission product yield (FPY) sublibraries. For each
 nuclide, this file includes:
 \begin{itemize}
   \item What transmutation reactions are possible, their Q values, and their products;
@@ -566,15 +585,14 @@ nuclide, this file includes:
 \end{itemize}
 
 Depletion chains can be automatically created in the Python API in the following
-manner. First, the user supplies a list of ENDF incident neutron, decay, and
-fission product yield sublibrary files. The incident neutron files are used to
-determine what nuclear reactions result in transmutation and what the
-corresponding Q values of the reactions are. The decay files are used to
-determine the half-life and possible decay modes of nuclides that are unstable.
-The fission product yield sublibraries are used to determine what fission
-products are produced when a fission reaction occurs. This information is then
-aggregated and written to an XML file that serves as the depletion chain file
-that is used at runtime to construct a burnup matrix.
+manner. First, the user supplies a list of ENDF incident neutron, decay, and FPY
+sublibrary files. The incident neutron files are used to determine what nuclear
+reactions result in transmutation and what the corresponding Q values of the
+reactions are. The decay files are used to determine the half-life and possible
+decay modes of nuclides that are unstable. The FPY sublibraries are used to
+determine what fission products are produced when a fission reaction occurs.
+This information is then aggregated and written to an XML file that serves as
+the depletion chain file that is used at runtime to construct a burnup matrix.
 
 In some cases, decay or reaction products appear that do not actually exist in
 the decay sublibrary files. OpenMC uses a set of heuristics to find a suitable
@@ -589,28 +607,45 @@ nuclide will undergo a $\upbeta^-$ decay. Once the replacement nuclide has been
 determined, OpenMC will check again if it exists in the decay sublibrary files.
 If not, the process is repeated.
 
-TODO: Discuss missing FPY~\cite{fensin2015pne}.
+Some nuclides that have fission reactions in ENDF/B-VII.1, such as $^{243}$Pu,
+do not have corresponding FPYs. For these nuclides, a decision has to be made on
+what set of FPY should be used when fission occurs. This issue was briefly
+studied by \citet{fensin2015pne}, who found that the proportion of fission
+reactions that occur in these nuclides is usually small enough that the choice
+of FPYs is not of great importance. For the depletion chains used in OpenMC, we
+have adopted the method used in Serpent, which is as follows:
+\begin{enumerate}
+  \item If the nuclide missing FPYs is a metastable state, use FPYs from the
+  ground state;
+  \item Use FPYs from an isotone if available;
+  \item Use FPYs from $^{235}$U.
+\end{enumerate}
 
-Using all incident neutron, decay, and fission product yield sublibrary files
-from an ENDF-format library, such as ENDF/B-VIII.0, results in a \emph{full}
-depletion chain that typically includes thousands of nuclides. Because the use
-of a chain with $n$ nuclides will result in an $n\times n$ burnup matrix, there
-is an incentive to reduce the number of nuclides in the depletion chain to
-minimize both the size of the burnup matrix and the number of nuclides that are
-tracked during a transport solve. The depletion chain class in OpenMC's Python
-API includes a method for automatically reducing the size of the chain. Starting
-with a set of nuclides that must be included, the method will recursively go
-through all decay and reaction modes to determine what products may be produced.
-Using this method on the ENDF/B-VII.1 library starting from a list of all stable
-or very long lived (half-life greater than $10^{15}$ sec) nuclides reduces the
-total number of nuclides in the depletion chain from 3,820 to 1,693.
+Using all incident neutron, decay, and FPY sublibrary files from an ENDF-format
+library, such as ENDF/B-VIII.0, results in a \emph{full} depletion chain that
+typically includes thousands of nuclides. Because the use of a chain with $n$
+nuclides will result in an $n\times n$ burnup matrix, there is an incentive to
+reduce the number of nuclides in the depletion chain to minimize both the size
+of the burnup matrix and the number of nuclides that are tracked during a
+transport solve. The depletion chain class in OpenMC's Python API includes a
+method for automatically reducing the size of the chain. Starting with a set of
+nuclides that must be included, the method will recursively go through all decay
+and reaction modes to determine what products may be produced. Using this method
+on the ENDF/B-VII.1 library starting from a list of all stable or very long
+lived (half-life greater than $10^{15}$ sec) nuclides reduces the total number
+of nuclides in the depletion chain from 3,820 to 1,693.
 
 In addition to the full and reduced depletion chains, a simplified depletion
-chain based on the VERA depletion benchmark specification~\citep{kim2015casl}
-was created and made available for users at \url{https://openmc.org}. This chain
-includes 223 nuclides and has adjusted decay branching ratios for some nuclides
+chain based on the VERA depletion benchmark specification~\citep{kim2015casl},
+which will henceforth be referred to as the \emph{CASL} depletion chain, was
+created and made available for users at \url{https://openmc.org}. This chain
+includes 228 nuclides and has adjusted decay branching ratios for some nuclides
 to preserve the accuracy of nuclide production rates. \Cref{fig:chains} shows
-which nuclides are included in each of the depletion chains.
+which nuclides are included in each of the depletion chains. To accurately model
+fast reactor problems (which may include Zr and Mo in the fuel), we have
+included $^{90}$Zr, $^{92}$Zr, $^{94}$Zr, $^{92}$Mo, and $^{94}$Mo in this
+depletion chain even though they were not included in the original
+specification.
 \begin{figure}
   \centering
   \includegraphics[width=4in]{figures/chains.pdf}
@@ -807,10 +842,19 @@ used in OpenMC's transport solver, which relies on MPI and OpenMP.
 \label{sec:results}
 
 To validate the depletion solver in OpenMC, we have carried out simulations
-using the \texttt{openmc.deplete} module as well as Serpent 2.1.31 on two simple
-problems. The first problem is a pressurized water reactor (PWR) pincell and the
-second problem is a single assembly of a sodium-cooled fast reactor (SFR). These
-problems were selected to cover both thermal and fast neutron spectra.
+using the \texttt{openmc.deplete} module as well as a developmental version of
+Serpent 2.1.32 on two simple problems. The first problem is a pressurized water
+reactor (PWR) pincell and the second problem is a single assembly of a
+sodium-cooled fast reactor (SFR). These problems were selected to cover both
+thermal and fast neutron spectra. While we had originally attempted to use
+Serpent 2.1.31, early comparisons between OpenMC and this version of Serpent
+revealed significant differences in the predicted concentration of $^{97}$Mo.
+This was found to be due to $^{97\text{m}}$Y having a non-zero independent yield
+and a zero cumulative yield in the FPY sublibrary file for $^{235}$U fission in
+ENDF/B-VII.1. The zero cumulative yield caused Serpent 2.1.31 to ignore it
+altogether, which resulted in significantly less production of $^{97}$Mo. The
+developmental version of Serpent 2.1.32 no longer ignores this particular
+fission product despite the erroneous cumulative yield.
 
 While comparison of simulation predictions to an experiment is a better means of
 ensuring fitness for a particular application, it is not without downsides.
@@ -893,7 +937,7 @@ energy dependence:
   \item Full depletion chain, interpolated FPYs
   \item Reduced depletion chain, thermal FPYs
   \item CASL depletion chain, thermal FPYs
-  \item CASL depletion chain, FPYs based on cutoff method
+  %\item CASL depletion chain, FPYs based on cutoff method
   \item CASL depletion chain, interpolated FPYs
 \end{enumerate}
 Because Serpent doesn't have an option for changing the depletion chain or the
