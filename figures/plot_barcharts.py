@@ -73,7 +73,7 @@ burnup_pwr = [
     12.5, 15.0, 17.5, 20.0, 22.5, 25.0, 27.5, 30.0, 32.5, 35.0, 37.5,
     40.0, 42.5, 45.0, 50.0
 ]
-burnup_sfr = np.linspace(0.0, 360.0, 73)
+burnup_sfr = np.linspace(0.0, 360.0, 19)
 
 def isotope_bar_plot(results_openmc, results_serpent, nuclides, filename, decimals=2, **kwargs):
     print(f'{filename}...')
@@ -93,9 +93,11 @@ def isotope_bar_plot(results_openmc, results_serpent, nuclides, filename, decima
     if 'pwr' in filename:
         burn_indices = (7, 14, 21, 28)
         burnup = burnup_pwr
+        burnup_units = 'MWd/kg'
     else:
         burn_indices = (4, 9, 13, 18)
         burnup = burnup_sfr
+        burnup_units = 'days'
     ind = np.arange(len(nuclides))
     height = 1/(len(burn_indices)+1)
     for i, index in enumerate(burn_indices):
@@ -104,7 +106,7 @@ def isotope_bar_plot(results_openmc, results_serpent, nuclides, filename, decima
         diff = np.zeros_like(data_openmc)
         nonzero = data_serpent > 0.0
         diff[nonzero] = (data_openmc[nonzero] - data_serpent[nonzero])/data_serpent[nonzero]
-        ax.barh(ind + i*height, diff, height, label=f'{burnup[index]} MWd/kg')
+        ax.barh(ind + i*height, diff, height, label=f'{burnup[index]} {burnup_units}')
 
     locs = ind + height*(len(burn_indices)/2 - 0.5)
     ax.xaxis.set_major_formatter(mtick.PercentFormatter(1.0, decimals))
@@ -124,19 +126,19 @@ isotope_bar_plot(results_casl_average, fuel, actinides, f'pwr/pwr_actinides_casl
 
 isotope_bar_plot(results_sfr_full, fuel_sfr, actinides, f'sfr/sfr_actinides_full.{ext}')
 isotope_bar_plot(results_sfr_casl, fuel_sfr, actinides, f'sfr/sfr_actinides_casl.{ext}')
-isotope_bar_plot(results_sfr_full_nop, fuel_sfr_nop, actinides, f'sfr/sfr_actinides_full_nop.{ext}')
-isotope_bar_plot(results_sfr_casl_nop, fuel_sfr_nop, actinides, f'sfr/sfr_actinides_casl_nop.{ext}')
+isotope_bar_plot(results_sfr_full_nop, fuel_sfr_nop, actinides, f'sfr/sfr_actinides_full_nop.{ext}', 3)
+isotope_bar_plot(results_sfr_casl_nop, fuel_sfr_nop, actinides, f'sfr/sfr_actinides_casl_nop.{ext}', 4)
 
 kwargs = {'figsize': (6.4, 10.0)}
 isotope_bar_plot(results_full_thermal, fuel, fission_products, f'pwr/pwr_fp_full_thermal.{ext}', 0, **kwargs)
 #isotope_bar_plot(results_full_cutoff, fuel, fission_products, f'pwr/pwr_fp_full_cutoff.{ext}', 1, **kwargs)
 isotope_bar_plot(results_full_average, fuel, fission_products, f'pwr/pwr_fp_full_average.{ext}', 1, **kwargs)
-isotope_bar_plot(results_reduced, fuel, fission_products, f'pwr/pwr_fp_reduced_thermal.{ext}', 0, **kwargs)
+isotope_bar_plot(results_reduced, fuel, fission_products, f'pwr/pwr_fp_reduced_average.{ext}', 1, **kwargs)
 isotope_bar_plot(results_casl_thermal, fuel, fission_products, f'pwr/pwr_fp_casl_thermal.{ext}', 0, **kwargs)
 #isotope_bar_plot(results_casl_cutoff, fuel, fission_products, f'pwr/pwr_fp_casl_cutoff.{ext}', 0, **kwargs)
 isotope_bar_plot(results_casl_average, fuel, fission_products, f'pwr/pwr_fp_casl_average.{ext}', 0, **kwargs)
 
 isotope_bar_plot(results_sfr_full, fuel_sfr, fission_products, f'sfr/sfr_fp_full_average.{ext}', 0, **kwargs)
-isotope_bar_plot(results_sfr_casl, fuel_sfr, fission_products, f'sfr/sfr_fp_casl_average.{ext}', 0, **kwargs)
+isotope_bar_plot(results_sfr_casl, fuel_sfr, fission_products, f'sfr/sfr_fp_casl_average.{ext}', 1, **kwargs)
 isotope_bar_plot(results_sfr_full_nop, fuel_sfr, fission_products, f'sfr/sfr_fp_full_average_nop.{ext}', 0, **kwargs)
-isotope_bar_plot(results_sfr_casl_nop, fuel_sfr, fission_products, f'sfr/sfr_fp_casl_average_nop.{ext}', 0, **kwargs)
+isotope_bar_plot(results_sfr_casl_nop, fuel_sfr, fission_products, f'sfr/sfr_fp_casl_average_nop.{ext}', 1, **kwargs)

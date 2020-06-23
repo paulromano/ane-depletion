@@ -589,6 +589,8 @@ nuclide will undergo a $\upbeta^-$ decay. Once the replacement nuclide has been
 determined, OpenMC will check again if it exists in the decay sublibrary files.
 If not, the process is repeated.
 
+TODO: Discuss missing FPY~\cite{fensin2015pne}.
+
 Using all incident neutron, decay, and fission product yield sublibrary files
 from an ENDF-format library, such as ENDF/B-VIII.0, results in a \emph{full}
 depletion chain that typically includes thousands of nuclides. Because the use
@@ -886,9 +888,6 @@ produce comparable results, irrespective of the absolute values.
 Six coupled transport-depletion simulations were carried out with OpenMC to test
 a variety of combinations of depletion chains and methods for handling FPY
 energy dependence:
-\begin{table}
-
-\end{table}
 \begin{enumerate}
   \item Full depletion chain, thermal FPYs
   \item Full depletion chain, interpolated FPYs
@@ -900,7 +899,7 @@ energy dependence:
 Because Serpent doesn't have an option for changing the depletion chain or the
 method for handling FPY energy dependence, a single coupled transport-depletion
 simulation with Serpent was carried out. For all simulations, 20 inactive
-batches, 200 active batches, and \num{3.6e6} particles per batch were used,
+batches, 200 active batches, and \num{4.0e6} particles per batch were used,
 which resulted in an uncertainty on the effective multiplication factor of about
 3--4 pcm.
 
@@ -1024,7 +1023,7 @@ However, in this case there is one clear outlier: $^{85}$Kr. Upon further
 investigation, it was determined that the root cause for this difference is the
 fact that the CASL depletion chain uses a cumulative yield for $^{85}$Kr, and
 the cumulative yield of $^{85}$Kr is known to be inconsistent with the
-independent yields of the $A=85$ mass chain~\cite{pigni2015nds}. Serpent relies
+independent yields of the $A=85$ mass chain~\citep{pigni2015nds}. Serpent relies
 solely on the independent yield in its depletion solver (as does the full
 depletion chain). Therefore, there is nothing inherently wrong with the CASL
 depletion chain or OpenMC; it is simply a matter of the underlying nuclear data
@@ -1056,10 +1055,186 @@ aforementioned reasons.
 
 \subsection{SFR Assembly}
 
+The SFR assembly model is based on an OECD/NEA benchmark for SFR
+analysis~\citep{nsc2015}. Namely, a 2D model of a driver assembly for the 1000
+MWth metallic core (MET-1000) was used. The fuel composition corresponded to the
+lowest axial region (the 17.16 cm column in Table 2.23 from ~\citep{nsc2015}).
+All dimensions and material compositions can be found in the original OECD/NEA
+report. The assembly model extends to positive/negative infinity in the $z$
+direction and has periodic boundary conditions on the outer hexagonal surfaces.
+A linear heating rate of \SI{23.3}{\kilo\watt\per\meter} per
+pin~\citep{cahalan2007anl} was used for power normalization. The assembly was
+depleted for 360 days in 20 day timesteps. As in the PWR pincell case, the
+predictor method was used in both codes for time integration.
+
+Unlike the PWR pincell model, which only contains materials at a single
+temperature, the SFR assembly model uses a higher temperature in the fuel than
+in other materials. In OpenMC, the temperature-dependence of neutron cross
+sections was handled by interpolating data between neighboring temperatures.
+Serpent uses an explicit temperature treatment known as target motion
+sampling~\cite{viitanen2012nse}. However, we note that for this problem, the
+temperature dependence of unresolved resonance probability tables becomes
+important because of the fast flux spectrum, but the temperature treatment in
+Serpent 2.1.31 does not handle probability tables.
+
+Four coupled transport-depletion simulations were carried out with OpenMC for
+the SFR assembly model:
+\begin{enumerate}
+  \item Full depletion chain, interpolated FPYs, probability tables on
+  \item CASL depletion chain, interpolated FPYs, probability tables on
+  \item Full depletion chain, interpolated FPYs, probability tables off
+  \item CASL depletion chain, interpolated FPYs, probability tables off
+\end{enumerate}
+The results for the PWR pincell model indicated that the reduced depletion chain
+results in identical behavior to the full depletion chain, so we have not
+included a case for the SFR assembly using the reduced depletion chain. Two
+coupled transport-depletion simulation with Serpent was carried out, one with
+probabilty tables turned on and one with them turned off. For all simulations,
+20 inactive batches, 200 active batches, and \num{4.0e6} particles per batch
+were used, which resulted in an uncertainty on the effective multiplication
+factor of about 3--4 pcm.
+
+% Also, we
+% have only included a single case with thermal FPYs to compare with the use of
+% interpolated FPYs using the same depletion chain.
+
+\Cref{fig:sfr-keff} shows the difference between $k_\text{eff}$ over time
+calculated by OpenMC and Serpent. The blue points correspond to results using
+the full depletion chain, and the green points correspond to results using the
+CASL chain. For each chain, simulations with probability tables on are denoted
+by circles and simulations without probability tables are denoted by squares.
+Unlike in the PWR pincell case, there is a statistically significant difference
+in $k_\text{eff}$ at zero days. Let us first consider the case with probability
+tables turned off. In this case, $k_\text{eff}$ calculated by OpenMC is about 20
+pcm higher than that of Serpent. When using the full depletion chain, there is
+no change in the difference between OpenMC and Serpent. When using the CASL
+depletion chain, the difference increases by about 20--30 pcm, similar to the
+behavior observed in \cref{fig:pwr-keff}. With probability tables turned on,
+however, the situation is quite different. At zero days, $k_\text{eff}$
+calculated by OpenMC is 20 pcm lower than the value calculated by Serpent. As
+the burnup increases, there is an increasing positive bias between OpenMC and
+Serpent. To understand the cause of this difference, it is instructive to look
+at the differences in isotopic compositions.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=4in]{figures/sfr_keff.pdf}
+  \caption{Difference in the effective multiplication factor, $k_\text{eff}$,
+  between OpenMC and Serpent for the SFR assembly model. While not shown, the one
+  standard deviation uncertainty in the difference is about 3.5 pcm.}
+  \label{fig:sfr-keff}
+\end{figure}
+
+\Cref{fig:sfr-actinides} shows the relative difference in predicted actinide
+concentrations between OpenMC and Serpent with probability tables turned on. For
+both the full and CASL depletion chains, the relative differences are all within
+0.2\%. While this may seem close, the observed difference in $^{238}$U and
+$^{239}$Pu concentrations merits special mention. In this model, the fuel
+material is at \SI{807}{\kelvin}, but the endf71x library contains cross
+sections processed at \SI{600}{\kelvin} and \SI{900}{\kelvin}. Thus, Serpent
+ends up using probability tables at \SI{600}{\kelvin} rather than
+\SI{807}{\kelvin}, which results in less parasitic absorption in $^{238}$U and
+consequently less production of $^{239}$Pu (hence a lower $k_\text{eff}$ than
+OpenMC with increasing burnup). Although OpenMC also does not have access to
+probability tables at the exact fuel temperature, it statistically interpolates
+between the probability tables at \SI{600}{\kelvin} and \SI{900}{\kelvin}.
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{figures/sfr/sfr_actinides_full.pdf}
+    \caption{Full depletion chain}
+    \label{fig:sfr-actinides-full}
+  \end{subfigure}
+  \hspace{0.05\textwidth}
+  \begin{subfigure}[t]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{figures/sfr/sfr_actinides_casl.pdf}
+    \caption{CASL depletion chain}
+    \label{fig:sfr-actinides-casl}
+  \end{subfigure}
+  \caption{Relative difference in actinide concetrations between OpenMC and
+  Serpent for the SFR assembly model at 80, 180, 260, and 360 days with
+  probability tables on.}
+  \label{fig:sfr-actinides}
+\end{figure}
+
+When probability tables are turned off, very close agreement is observed between
+the predicted actinide concentrations in OpenMC and Serpent, as shown in
+\cref{fig:sfr-actinides-nop}. In this case, the actinide concetrations agree to
+within 0.01\% at all times during depletion for both the full and CASL depletion
+chains.
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{figures/sfr/sfr_actinides_full_nop.pdf}
+    \caption{Full depletion chain}
+    \label{fig:sfr-actinides-full-nop}
+  \end{subfigure}
+  \hspace{0.05\textwidth}
+  \begin{subfigure}[t]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{figures/sfr/sfr_actinides_casl_nop.pdf}
+    \caption{CASL depletion chain}
+    \label{fig:sfr-actinides-casl-nop}
+  \end{subfigure}
+  \caption{Relative difference in actinide concetrations between OpenMC and
+  Serpent for the SFR assembly model at 80, 180, 260, and 360 days with
+  probability tables off.}
+  \label{fig:sfr-actinides-nop}
+\end{figure}
+
+\Cref{fig:sfr-fp} shows the relative difference in fission product
+concentrations between OpenMC and Serpent with probability tables turned on.
+Most differences between OpenMC and Serpent are below 1\%. As with the PWR
+pincell model, OpenMC tends to produce a lower concentration of $^{109}$Ag most
+likely because of differences in the treatment of FPY energy dependence. The
+only noticeable difference between the full and CASL depletion chains is for
+$^{85}$Kr, which is again explained by the use of an inconsistent cumulative
+yield in the CASL depletion chain.
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{figures/sfr/sfr_fp_full_average.pdf}
+    \caption{Full depletion chain}
+  \end{subfigure}
+  \hspace{0.05\textwidth}
+  \begin{subfigure}[t]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{figures/sfr/sfr_fp_casl_average.pdf}
+    \caption{CASL depletion chain}
+  \end{subfigure}
+  \caption{Relative difference in fission product concetrations between OpenMC
+  and Serpent for the SFR assembly model at 80, 180, 260, and 360 days with
+  probability tables on.}
+  \label{fig:sfr-fp}
+\end{figure}
+
+With probability tables turned on, the differences between OpenMC and Serpent in
+fission product concentrations are mostly the same as when probability tables
+were turned off, as shown in \cref{fig:sfr-fp-nop}. We note that because the
+difference in $^{238}$U and $^{239}$Pu was still less than 0.2\% in
+\cref{fig:sfr-actinides}, it is expected that the use of probability tables
+doesn't have a large effect on the fission product concentrations. Again, most
+fission product concentrations agree to within 1\%, with $^{109}$Ag and
+$^{85}$Kr being the notable outliers.
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{figures/sfr/sfr_fp_full_average_nop.pdf}
+    \caption{Full depletion chain}
+  \end{subfigure}
+  \hspace{0.05\textwidth}
+  \begin{subfigure}[t]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{figures/sfr/sfr_fp_casl_average_nop.pdf}
+    \caption{CASL depletion chain}
+  \end{subfigure}
+  \caption{Relative difference in fission product concetrations between OpenMC
+  and Serpent for the SFR assembly model at 80, 180, 260, and 360 days with
+  probability tables off.}
+  \label{fig:sfr-fp-nop}
+\end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusions}
 \label{sec:conclusions}
+
+Discuss temperature dependence and probability tables in SFR model.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{Acknowledgments}

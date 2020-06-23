@@ -48,7 +48,7 @@ def difference(results, serpent_keff):
     diff = 1e5*(openmc_keff - serpent_keff)
     return unp.nominal_values(diff)
 
-# Plot results -----------------------------------------------------------------
+# Plot PWR results -------------------------------------------------------------
 
 burnup = [
     0.0, 0.1, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0,
@@ -68,4 +68,21 @@ ax.set_ylabel(r"$k_\text{OpenMC} - k_\text{Serpent}$ [pcm]")
 ax.grid(True)
 ax.legend()
 plt.savefig('pwr_keff.pdf', bbox_inches='tight')
+plt.close()
+
+# Plot SFR results -------------------------------------------------------------
+
+days = np.linspace(0.0, 360.0, 19)
+
+fig, ax = plt.subplots()
+ax.plot(days, difference(results_sfr_full, serpent_sfr), 'bo', label='Full, ptables')
+ax.plot(days, difference(results_sfr_casl, serpent_sfr), 'go', label='CASL, ptables')
+ax.plot(days, difference(results_sfr_full_nop, serpent_sfr_nop), 'bs', markerfacecolor='none', label='Full, no ptables')
+ax.plot(days, difference(results_sfr_casl_nop, serpent_sfr_nop), 'gs', markerfacecolor='none', label='CASL, no ptables')
+ax.plot(color='k', linestyle='--')
+ax.set_xlabel("Time [days]")
+ax.set_ylabel(r"$k_\text{OpenMC} - k_\text{Serpent}$ [pcm]")
+ax.grid(True)
+ax.legend()
+plt.savefig('sfr_keff.pdf', bbox_inches='tight')
 plt.close()
