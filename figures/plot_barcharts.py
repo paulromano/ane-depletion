@@ -23,11 +23,11 @@ rcParams['text.latex.preamble'] = [
 
 print('Loading PWR data...')
 results_full_thermal = ResultsList.from_hdf5("pwr/depletion_results_full_thermal.h5")
-results_full_cutoff = ResultsList.from_hdf5("pwr/depletion_results_full_cutoff.h5")
+#results_full_cutoff = ResultsList.from_hdf5("pwr/depletion_results_full_cutoff.h5")
 results_full_average = ResultsList.from_hdf5("pwr/depletion_results_full_average.h5")
 results_reduced = ResultsList.from_hdf5("pwr/depletion_results_reduced_average.h5")
 results_casl_thermal = ResultsList.from_hdf5("pwr/depletion_results_casl_thermal.h5")
-results_casl_cutoff = ResultsList.from_hdf5("pwr/depletion_results_casl_cutoff.h5")
+#results_casl_cutoff = ResultsList.from_hdf5("pwr/depletion_results_casl_cutoff.h5")
 results_casl_average = ResultsList.from_hdf5("pwr/depletion_results_casl_average.h5")
 fuel = serpentTools.read('pwr/serpent_input_dep.m')['fuel']
 
@@ -119,25 +119,25 @@ def isotope_bar_plot(results_openmc, results_serpent, nuclides, filename, decima
     plt.savefig(filename)
 
 ext = 'pdf'
-isotope_bar_plot(results_full_average, fuel, actinides, f'pwr/pwr_actinides_full.{ext}')
-isotope_bar_plot(results_reduced, fuel, actinides, f'pwr/pwr_actinides_reduced.{ext}')
-isotope_bar_plot(results_casl_average, fuel, actinides, f'pwr/pwr_actinides_casl.{ext}')
+isotope_bar_plot(results_full_average, fuel, actinides, f'pwr_actinides_full.{ext}')
+isotope_bar_plot(results_reduced, fuel, actinides, f'pwr_actinides_reduced.{ext}')
+isotope_bar_plot(results_casl_average, fuel, actinides, f'pwr_actinides_casl.{ext}')
 
-isotope_bar_plot(results_sfr_full, fuel_sfr, actinides, f'sfr/sfr_actinides_full.{ext}')
-isotope_bar_plot(results_sfr_casl, fuel_sfr, actinides, f'sfr/sfr_actinides_casl.{ext}')
-isotope_bar_plot(results_sfr_full_nop, fuel_sfr_nop, actinides, f'sfr/sfr_actinides_full_nop.{ext}', 3)
-isotope_bar_plot(results_sfr_casl_nop, fuel_sfr_nop, actinides, f'sfr/sfr_actinides_casl_nop.{ext}', 4)
+isotope_bar_plot(results_sfr_full, fuel_sfr, actinides, f'sfr_actinides_full.{ext}')
+isotope_bar_plot(results_sfr_casl, fuel_sfr, actinides, f'sfr_actinides_casl.{ext}')
+isotope_bar_plot(results_sfr_full_nop, fuel_sfr_nop, actinides, f'sfr_actinides_full_nop.{ext}', 3)
+isotope_bar_plot(results_sfr_casl_nop, fuel_sfr_nop, actinides, f'sfr_actinides_casl_nop.{ext}', 4)
 
 kwargs = {'figsize': (6.4, 10.0)}
-isotope_bar_plot(results_full_thermal, fuel, fission_products, f'pwr/pwr_fp_full_thermal.{ext}', 0, **kwargs)
-#isotope_bar_plot(results_full_cutoff, fuel, fission_products, f'pwr/pwr_fp_full_cutoff.{ext}', 1, **kwargs)
-isotope_bar_plot(results_full_average, fuel, fission_products, f'pwr/pwr_fp_full_average.{ext}', 1, **kwargs)
-isotope_bar_plot(results_reduced, fuel, fission_products, f'pwr/pwr_fp_reduced_average.{ext}', 1, **kwargs)
-isotope_bar_plot(results_casl_thermal, fuel, fission_products, f'pwr/pwr_fp_casl_thermal.{ext}', 0, **kwargs)
-#isotope_bar_plot(results_casl_cutoff, fuel, fission_products, f'pwr/pwr_fp_casl_cutoff.{ext}', 0, **kwargs)
-isotope_bar_plot(results_casl_average, fuel, fission_products, f'pwr/pwr_fp_casl_average.{ext}', 0, **kwargs)
+isotope_bar_plot(results_full_thermal, fuel, fission_products, f'pwr_fp_full_thermal.{ext}', 0, **kwargs)
+#isotope_bar_plot(results_full_cutoff, fuel, fission_products, f'pwr_fp_full_cutoff.{ext}', 1, **kwargs)
+isotope_bar_plot(results_full_average, fuel, fission_products, f'pwr_fp_full_average.{ext}', 1, **kwargs)
+isotope_bar_plot(results_reduced, fuel, fission_products, f'pwr_fp_reduced_average.{ext}', 1, **kwargs)
+isotope_bar_plot(results_casl_thermal, fuel, fission_products, f'pwr_fp_casl_thermal.{ext}', 0, **kwargs)
+#isotope_bar_plot(results_casl_cutoff, fuel, fission_products, f'pwr_fp_casl_cutoff.{ext}', 0, **kwargs)
+isotope_bar_plot(results_casl_average, fuel, fission_products, f'pwr_fp_casl_average.{ext}', 0, **kwargs)
 
-isotope_bar_plot(results_sfr_full, fuel_sfr, fission_products, f'sfr/sfr_fp_full_average.{ext}', 0, **kwargs)
-isotope_bar_plot(results_sfr_casl, fuel_sfr, fission_products, f'sfr/sfr_fp_casl_average.{ext}', 1, **kwargs)
-isotope_bar_plot(results_sfr_full_nop, fuel_sfr, fission_products, f'sfr/sfr_fp_full_average_nop.{ext}', 0, **kwargs)
-isotope_bar_plot(results_sfr_casl_nop, fuel_sfr, fission_products, f'sfr/sfr_fp_casl_average_nop.{ext}', 1, **kwargs)
+isotope_bar_plot(results_sfr_full, fuel_sfr, fission_products, f'sfr_fp_full_average.{ext}', 0, **kwargs)
+isotope_bar_plot(results_sfr_casl, fuel_sfr, fission_products, f'sfr_fp_casl_average.{ext}', 1, **kwargs)
+isotope_bar_plot(results_sfr_full_nop, fuel_sfr, fission_products, f'sfr_fp_full_average_nop.{ext}', 0, **kwargs)
+isotope_bar_plot(results_sfr_casl_nop, fuel_sfr, fission_products, f'sfr_fp_casl_average_nop.{ext}', 1, **kwargs)
