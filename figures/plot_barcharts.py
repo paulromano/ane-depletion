@@ -52,14 +52,11 @@ actinides = [
 ]
 
 fission_products = [
-    'Kr85', 'Sr90', 'Y90', 'Mo95', 'Tc99', 'Ru101', 'Ru106', 'Rh103', 'Pd105', 'Pd107', 'Ag109',
-    'Te132', 'I129', 'Xe131', 'Xe135', 'Cs133', 'Cs134', 'Cs135', 'Cs137',
-    'La139', 'Ce140', 'Ce142', 'Ce144', 'Pm147', 'Nd142', 'Nd143',
-    'Nd144', 'Nd145', 'Nd146', 'Nd148', 'Nd150', 'Sm147', 'Sm148', 'Sm149',
-#    'Sm150', 'Sm151', 'Sm152', 'Sm154', 'Eu151', 'Eu153', 'Eu154', 'Eu155',
-#    'Gd154', 'Gd155', 'Gd156', 'Gd158', 'Gd160'
-    'Zr91', 'Zr93', 'Zr95', 'Zr96',
-    'Mo96', 'Mo97', 'Mo98', 'Mo99', 'Mo100'
+    'Kr85', 'Sr90', 'Y90', 'Zr93', 'Mo95', 'Mo97', 'Tc99', 'Ru101', 'Ru106',
+    'Rh103', 'Pd105', 'Pd107', 'Ag109', # 'Cd113_m1', 'Sn121_m1', 'Sn126',
+    'Te132', 'I129', 'I131', 'Xe131', 'Xe135', 'Cs133', 'Cs134', 'Cs135', 'Cs137',
+    'La139', 'Ce142', 'Nd143', 'Nd145', 'Pm147', 'Sm149', 'Sm151',
+    # 'Eu155', 'Gd158',
 ]
 
 def sup_label(name):
@@ -110,6 +107,8 @@ def isotope_bar_plot(results_openmc, results_serpent, nuclides, filename, decima
 
     locs = ind + height*(len(burn_indices)/2 - 0.5)
     ax.xaxis.set_major_formatter(mtick.PercentFormatter(1.0, decimals))
+    if decimals >= 3:
+        ax.xaxis.set_tick_params(rotation=30)
     ax.set_xlabel('(OpenMC - Serpent)/Serpent')
     ax.set_yticks(locs)
     ax.set_yticklabels([sup_label(x) for x in nuclides])
