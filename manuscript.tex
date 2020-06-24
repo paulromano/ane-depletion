@@ -14,7 +14,7 @@
 \usepackage{algorithm}
 \usepackage{algorithmicx}
 \usepackage{algpseudocode}
-\usepackage{siunitx}
+\usepackage[per-mode=symbol]{siunitx}
 \usepackage{multirow}
 \usepackage{upgreek}
 
@@ -849,14 +849,14 @@ Serpent 2.1.32 on two simple problems. The first problem is a pressurized water
 reactor (PWR) pincell and the second problem is a single assembly of a
 sodium-cooled fast reactor (SFR). These problems were selected to cover both
 thermal and fast neutron spectra. While we had originally attempted to use
-Serpent 2.1.31, early comparisons between OpenMC and this version of Serpent
-revealed significant differences in the predicted concentration of $^{97}$Mo.
-This was found to be due to $^{97\text{m}}$Y having a non-zero independent yield
-and a zero cumulative yield in the FPY sublibrary file for $^{235}$U fission in
-ENDF/B-VII.1. The zero cumulative yield caused Serpent 2.1.31 to ignore it
-altogether, which resulted in significantly less production of $^{97}$Mo. The
-developmental version of Serpent 2.1.32 no longer ignores this particular
-fission product despite the erroneous cumulative yield.
+Serpent 2.1.31, preliminary comparisons between OpenMC and this version of
+Serpent revealed significant differences in the predicted concentration of
+$^{97}$Mo. This difference was found to be due to $^{97\text{m}}$Y having a
+non-zero independent yield and a zero cumulative yield in the FPY sublibrary
+file for $^{235}$U fission in ENDF/B-VII.1. The zero cumulative yield caused
+Serpent 2.1.31 to ignore it altogether, which resulted in significantly less
+production of $^{97}$Mo. The developmental version of Serpent 2.1.32 no longer
+ignores this particular fission product despite the erroneous cumulative yield.
 
 While comparison of simulation predictions to an experiment is a better means of
 ensuring fitness for a particular application, it is not without downsides.
@@ -872,19 +872,19 @@ problem in the method implementation in one of the codes.
 Given the remarks above, it is of utmost importance to ensure that the same
 nuclear data are being used in a cross-code comparison. For a depletion
 simulation, we must ensure that the incident neutron cross sections and
-secondary angle/energy distributions, radioactive decay data, and fission
-product yields are the same for both codes. In the simulations performed, all
-data was based on the ENDF/B-VII.1 nuclear data library~\citep{chadwick2011nds}.
-Incident neutron cross sections from the ENDF/B-VII.1 library processed by the
-LANL nuclear data team~\citep{conlin2013lanl}, known as endf71x, were used for
-transport simulations in both OpenMC and Serpent. Serpent is able to use the ACE
-files from the endf71x library directly while OpenMC uses an HDF5 format that
-requires conversion of the ACE files first. For the PWR pincell problem,
-$S(\alpha,\beta)$ data is also needed for hydrogen in light water; because
-Serpent does not yet handle the continuous representation used in the ENDF71SaB
-library, the light water data from ENDF/B-VII.0 was used instead. We note that
-the light water evaluation didn't actually change between ENDF/B-VII.0 and
-ENDF/B-VII.1.
+secondary angle/energy distributions, radioactive decay data, and FPYs are the
+same for both codes. In the simulations performed, all data was based on the
+ENDF/B-VII.1 nuclear data library~\citep{chadwick2011nds}. Incident neutron
+cross sections from the ENDF/B-VII.1 library processed by the LANL nuclear data
+team~\citep{conlin2013lanl}, known as endf71x, were used for transport
+simulations in both OpenMC and Serpent. Serpent is able to use the ACE files
+from the endf71x library directly while OpenMC uses an HDF5 format that requires
+conversion of the ACE files first. For the PWR pincell problem,
+$S(\alpha,\beta)$ thermal scattering data is also needed for hydrogen in light
+water; because Serpent does not yet handle the continuous representation used in
+the ENDF71SaB library, the light water data from ENDF/B-VII.0 was used instead.
+We note that the light water evaluation didn't actually change between
+ENDF/B-VII.0 and ENDF/B-VII.1.
 
 In Serpent, the depletion solver relies directly on ENDF decay and FPY
 sublibrary files. Appropriate decay and FPY libraries for Serpent were thus
@@ -894,11 +894,11 @@ depletion chains based on ENDF/B-VII.1 decay and FPY sublibrary files.
 
 To ensure that OpenMC and Serpent perform power normalization in the same
 manner, the default fission heating values from Serpent were used in OpenMC. By
-default, the energy release per fission in $^{235}U$ in Serpent is set to
-\SI{202.27}{\mega\electronvolt}, and the values for other actinides is scaled
+default, the energy release per fission in $^{235}$U in Serpent is set to
+\SI{202.27}{\mega\electronvolt}, and the values for other actinides are scaled
 based on the Q value for fission listed in MF=3 in the ENDF evaluation. Without
 the same heating values, the power normalization might result in OpenMC
-depleting materials too quickly or too slowly.
+depleting materials too quickly or too slowly relative to Serpent.
 
 Serpent uses energy-independent capture branching ratios by default that are
 based on the JEFF 3.1 activation file using a PWR flux spectrum. For the PWR
@@ -906,10 +906,7 @@ problem, these energy-independent branching ratios were used in OpenMC. For the
 SFR problem, Serpent was used to first generate representative capture branching
 ratios in the fast flux spectrum using Serpent's energy-dependent capture
 branching ratio treatment. Then, the energy-independent branching ratios were
-set in both Serpent and OpenMC. As discussed in \cref{sec:fpy}, OpenMC also has
-several methods for treating the energy dependence of FPYs. The OpenMC
-simulations were carried out with the three different methods to see what effect
-they have on resulting isotopic compositions as compared with Serpent.
+set in both Serpent and OpenMC.
 
 \subsection{PWR Pincell}
 
@@ -929,7 +926,7 @@ The short timesteps at the beginning are used to accurately capture the buildup
 of xenon isotopes. In both codes, the predictor method was used for time
 integration. While the predictor method is the least accurate time integration
 method, the purpose of the comparison is to confirm that OpenMC and Serpent
-produce comparable results, irrespective of the absolute values.
+produce comparable results irrespective of the absolute values.
 
 Five coupled transport--depletion simulations were carried out with OpenMC to test
 a variety of combinations of depletion chains and methods for handling FPY
@@ -937,7 +934,7 @@ energy dependence:
 \begin{enumerate}
   \item Full depletion chain, thermal FPYs
   \item Full depletion chain, interpolated FPYs
-  \item Reduced depletion chain, thermal FPYs
+  \item Reduced depletion chain, interpolated FPYs
   \item CASL depletion chain, thermal FPYs
   %\item CASL depletion chain, FPYs based on cutoff method
   \item CASL depletion chain, interpolated FPYs
@@ -961,7 +958,7 @@ same behavior as the full chain as one would expect. Use of the CASL chain
 results in a slightly larger difference between OpenMC and Serpent at 50 MWd/kg,
 about 40 pcm. We also see that for both the full and CASL chains, changing the
 method for handling FPY energy dependence doesn't appear to have much of an
-affect on $k_\text{eff}$, which is primarily driven by the prediction of
+effect on $k_\text{eff}$, which is primarily driven by the prediction of
 actinide concentrations.
 \begin{figure}[H]
   \centering
@@ -1023,20 +1020,20 @@ when using the full depletion chain along with thermal FPYs. In this case,
 although most fission products are within 1\% of Serpent, they are
 systematically overpredicted other than a few nuclides. Because Serpent uses the
 average fission energy to interpolate between two sets of FPYs, the systematic
-difference is actually expected when using thermal FPYs in OpenMC. As the
-incident energy of a neutron causing fission increases, the ``saddle'' and
-``wings'' in the FPY curve tend to increase significantly, and the peaks around
-$A=95$ and $A=135$ tend to slightly decrease. This corresponds to exactly what
-is observed in \cref{fig:pwr-fp-full-thermal}. Because thermal FPYs were used in
-OpenMC for this case, we expect that fission products near one of the two peaks
-of the FPY curve will be slightly overpredicted relative to Serpent, and fission
-products away from the peak will be underpredicted. This can be confirmed for
-particular nuclides. Take, for example, $^{109}$Ag; in the $A=109$ mass chain,
-the nuclides with the highest independent yields are $^{109}$Tc and $^{109}$Mo.
-Both these nuclides have independent yields that increase significantly with
-increasing neutron energy. The same situation occurs for $^{129}$I, whose
-predominant precursor is $^{129}$Sn. The independent yields for these three
-precursor nuclides are shown in \cref{tab:fp-yields}.
+difference is expected when using thermal FPYs in OpenMC. As the incident energy
+of a neutron causing fission increases, the ``saddle'' and ``wings'' in the FPY
+curve tend to increase significantly, and the peaks around $A=95$ and $A=135$
+tend to slightly decrease. This corresponds to exactly what is observed in
+\cref{fig:pwr-fp-full-thermal}. Because thermal FPYs were used in OpenMC for
+this case, we expect that fission products near one of the two peaks of the FPY
+curve will be slightly overpredicted relative to Serpent, and fission products
+away from the peak will be underpredicted. This can be confirmed for particular
+nuclides. Take, for example, $^{109}$Ag; in the $A=109$ mass chain, the nuclides
+with the highest independent yields are $^{109}$Tc and $^{109}$Mo. Both these
+nuclides have independent yields that increase significantly with increasing
+neutron energy. The same situation occurs for $^{129}$I, whose predominant
+precursor is $^{129}$Sn. The independent yields for these three precursor
+nuclides are shown in \cref{tab:fp-yields}.
 \begin{figure}[H]
   \centering
   \includegraphics[width=4in]{figures/pwr/pwr_fp_full_thermal.pdf}
@@ -1069,13 +1066,14 @@ However, in this case there is one clear outlier: $^{85}$Kr. Upon further
 investigation, it was determined that the root cause for this difference is the
 fact that the CASL depletion chain uses a cumulative yield for $^{85}$Kr, and
 the cumulative yield of $^{85}$Kr is known to be inconsistent with the
-independent yields of the $A=85$ mass chain~\citep{pigni2015nds}. Serpent relies
-solely on the independent yield in its depletion solver (as does the full
-depletion chain). Therefore, there is nothing inherently wrong with the CASL
-depletion chain or OpenMC; it is simply a matter of the underlying nuclear data
-being inconsistent. The 5\% underprediction of $^{85}$Kr is also likely
-responsible for the slightly higher difference in $k_\text{eff}$ for the CASL
-depletion chain shown in \cref{fig:pwr-keff}.
+independent yields of the $A=85$ mass chain in
+ENDF/B-VII.1~\citep{pigni2015nds}. Serpent relies solely on independent yields
+in its depletion solver (as does the full depletion chain). We can conclude,
+then, that there is nothing inherently wrong with the CASL depletion chain or
+OpenMC; it is simply a matter of the underlying nuclear data being inconsistent.
+The 5\% underprediction of $^{85}$Kr is also likely responsible for the slightly
+higher difference in $k_\text{eff}$ for the CASL depletion chain shown in
+\cref{fig:pwr-keff}.
 \begin{figure}[H]
   \centering
   \includegraphics[width=4in]{figures/pwr/pwr_fp_casl_average.pdf}
@@ -1118,7 +1116,7 @@ temperature, the SFR assembly model uses a higher temperature in the fuel than
 in other materials. In OpenMC, the temperature-dependence of neutron cross
 sections was handled by interpolating data between neighboring temperatures.
 Serpent uses an explicit temperature treatment known as target motion
-sampling~\cite{viitanen2012nse}. However, we note that for this problem, the
+sampling~\citep{viitanen2012nse}. However, we note that for this problem, the
 temperature dependence of unresolved resonance probability tables becomes
 important because of the fast flux spectrum, but the temperature treatment in
 Serpent 2.1.31 does not handle probability tables.
@@ -1138,29 +1136,30 @@ coupled transport--depletion simulation with Serpent was carried out, one with
 probabilty tables turned on and one with them turned off. For all simulations,
 20 inactive batches, 200 active batches, and \num{4.0e6} particles per batch
 were used, which resulted in an uncertainty on the effective multiplication
-factor of about 3--4 pcm.
+factor of 3--4 pcm.
 
 % Also, we
 % have only included a single case with thermal FPYs to compare with the use of
 % interpolated FPYs using the same depletion chain.
 
-\Cref{fig:sfr-keff} shows the difference between $k_\text{eff}$ over time
-calculated by OpenMC and Serpent. The blue points correspond to results using
-the full depletion chain, and the green points correspond to results using the
-CASL chain. For each chain, simulations with probability tables on are denoted
-by circles and simulations without probability tables are denoted by squares.
-Unlike in the PWR pincell case, there is a statistically significant difference
-in $k_\text{eff}$ at zero days. Let us first consider the case with probability
-tables turned off. In this case, $k_\text{eff}$ calculated by OpenMC is about 20
-pcm higher than that of Serpent. When using the full depletion chain, there is
-no change in the difference between OpenMC and Serpent. When using the CASL
-depletion chain, the difference increases by about 20--30 pcm, similar to the
-behavior observed in \cref{fig:pwr-keff}. With probability tables turned on,
-however, the situation is quite different. At zero days, $k_\text{eff}$
-calculated by OpenMC is 20 pcm lower than the value calculated by Serpent. As
-the burnup increases, there is an increasing positive bias between OpenMC and
-Serpent. To understand the cause of this difference, it is instructive to look
-at the differences in isotopic compositions.
+\Cref{fig:sfr-keff} shows the difference between $k_\text{eff}$ calculated by
+OpenMC and Serpent as the assembly is depleted. The blue points correspond to
+results using the full depletion chain, and the green points correspond to
+results using the CASL chain. For each chain, simulations with probability
+tables on are denoted by circles and simulations without probability tables are
+denoted by squares. Unlike in the PWR pincell case, there is a statistically
+significant difference in $k_\text{eff}$ at zero days. Let us first consider the
+case with probability tables turned off. In this case, $k_\text{eff}$ calculated
+by OpenMC is about 20 pcm higher than that of Serpent. When using the full
+depletion chain, there is no change in the difference between OpenMC and Serpent
+with increasing burnup. When using the CASL depletion chain, the difference
+increases by about 20--30 pcm, similar to the behavior shown in
+\cref{fig:pwr-keff}. With probability tables turned on, however, the situation
+is quite different. At zero days, $k_\text{eff}$ calculated by OpenMC is 20 pcm
+lower than the value calculated by Serpent. As the burnup increases, there is an
+increasing positive bias between OpenMC and Serpent. To understand the cause of
+this difference, it is instructive to look at differences in isotopic
+compositions.
 \begin{figure}[H]
   \centering
   \includegraphics[width=4in]{figures/sfr_keff.pdf}
@@ -1253,10 +1252,10 @@ yield in the CASL depletion chain.
 
 With probability tables turned on, the differences between OpenMC and Serpent in
 fission product concentrations are mostly the same as when probability tables
-were turned off, as shown in \cref{fig:sfr-fp-nop}. We note that because the
-difference in $^{238}$U and $^{239}$Pu was still less than 0.2\% in
-\cref{fig:sfr-actinides}, it is expected that the use of probability tables
-doesn't have a large effect on the fission product concentrations. Again, most
+were turned off, as shown in \cref{fig:sfr-fp-nop}. Because the difference in
+$^{238}$U and $^{239}$Pu concentrations was less than 0.2\% in
+\cref{fig:sfr-actinides}, it makes sense that the use of probability tables
+would not have a large effect on the fission product concentrations. Again, most
 fission product concentrations agree to within 1\%, with $^{109}$Ag and
 $^{85}$Kr being the notable outliers.
 \begin{figure}[H]
@@ -1285,7 +1284,7 @@ transport code. The depletion solver is implemented primarily in Python 3 and
 interfaces with OpenMC's transport solver through Python bindings to an
 underlying C++ API, which enables data transfers to happen in memory rather than
 through filesystem I/O. The design of the depletion solver relies on a set of
-abstract classes that provide modularity and separation between difference
+abstract classes that provide modularity and separation between different
 components, including the time integration methods, the matrix exponential
 solver, and the transport operator. In principle, this modularity would allow
 the depletion system to be used with another transport code. Rather than relying
@@ -1316,20 +1315,20 @@ results in a significantly lower runtime compared to the full depletion chain
 while still retaining accuracy, it is recommended for general use by OpenMC
 users.
 
-We found that when comparing results on the SFR assembly model, larger
-differences in $k_\text{eff}$ and isotopic concentrations were observed when
-unresolved resonance region probability tables were turned on. These differences
-were found to be related to how the temperature dependence of cross sections is
-treated in the unresolved resonance region. In OpenMC, when the temperature of a
-material is in between two temperatures at which probability tables are
-tabulated, statistical interpolation between the tables is performed. Serpent,
-on the other hand, uses probability tables at the lower tabulated temperature.
-For the SFR model, this results in lower parasitic neutron absorption in
-$^{238}$U, lower production of $^{239}$Pu, and ultimately a lower
-$k_\text{eff}$. After depleting for 360 days, there was a 100 pcm difference
-between OpenMC and Serpent due to this effect. Although this is not a huge
-difference, users who are simulating problems with a non-uniform temperature
-distribution should be aware of this behavior.
+When comparing results on the SFR assembly model, larger differences in
+$k_\text{eff}$ and isotopic concentrations were observed when unresolved
+resonance region probability tables were turned on. These differences were found
+to be related to how the temperature dependence of cross sections is treated in
+the unresolved resonance region. In OpenMC, when the temperature of a material
+is inbetween two temperatures at which probability tables are tabulated,
+statistical interpolation between the tables is performed. Serpent, on the other
+hand, uses probability tables at the lower tabulated temperature. For the SFR
+model, this results in lower parasitic neutron absorption in $^{238}$U, lower
+production of $^{239}$Pu, and ultimately a lower $k_\text{eff}$. After depleting
+for 360 days, there was a 100 pcm difference between OpenMC and Serpent due to
+this effect. Although this is not a huge difference, users who are simulating
+problems with a non-uniform temperature distribution should be aware of this
+behavior.
 
 Finally, we remark that although we did observe some differences between OpenMC
 and Serpent, most of the differences were related to deficiencies in the nuclear
@@ -1338,10 +1337,17 @@ and same methods are used in two independently developed codes, it is possible
 to obtain results in a depletion simulation that match within 10s of pcm on
 $k_\text{eff}$ and less than 1\% on isotopic concentrations.
 
-Discuss limitations (not validated against experiment, only as good as data).
-Improvements in runtime are needed. Only tested for fission applications.
-Further development and testing needed for other application areas, such as
-transmutation in fusion reactors.
+In the present work, we have only performed a cross-code comparison between
+OpenMC and Serpent. While the results are certainly encouraging, we would
+caution readers that no comparisons against experimental results have been
+performed to date and would be needed to ensure the fitness for a particular
+application. We also highlight the fact that the present comparisons are focused
+solely on fission reactor applications. Although the \texttt{openmc.deplete}
+module may eventually be of interest to other application areas, further changes
+and enhancements would be needed. For example, for use in fusion applications, a
+wider variety of transmutation reactions would need to be accounted for, and the
+ability to handle transmutation from a fixed, pulsed neutron source would be
+required.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{Acknowledgments}
