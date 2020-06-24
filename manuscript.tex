@@ -443,7 +443,7 @@ scheme called CF4 is used that is given as
 This method requires four transport solutions and five matrix exponentials per
 timestep. However, because it is fourth-order, it allows large timesteps to be
 used without sacrificing accuracy. For example, on a test problem based on a
-3$\times$3 fuel pin array with gadolinum as a burnable absorber, the CF4 method
+3$\times$3 fuel pin array with gadolinium as a burnable absorber, the CF4 method
 allowed 20 day timesteps while still achieving an accuracy of of 0.1\% on the
 $^{157}$Gd number density~\citep{josey2017phd}.
 
@@ -463,7 +463,7 @@ following form:
 \end{equation}
 Noting that the coefficients in \cref{eq:epc} can be arranged in a Butcher
 tableau, \citet{josey2016jcp} proposed using the coefficients for the classic
-fourth Runge--Kutta method:
+fourth-order Runge--Kutta method:
 \begin{equation}
   \begin{split}
     \vect{A}_1 &= h\vect{A}(\vect{n}_0) \\
@@ -790,7 +790,7 @@ are required to implement a method that takes a list of nuclide densities to be
 used in the problem and a system power and returns the $k$-eigenvalue and the
 reaction rates resulting from the transport operator. Currently, there is a
 single subclass of \texttt{TransportOperator} that interfaces with the Python
-bindings to OpenMC's C++ API to call a tranport solve and obtain reaction rates.
+bindings to OpenMC's C++ API to call a transport solve and obtain reaction rates.
 Once reaction rates are obtained, a separate depletion chain class (that is not
 abstract) uses them to construct the burnup matrix, $\vect{A}$, based on the
 data present in the depletion chain.
@@ -985,7 +985,7 @@ mirror those in \cref{fig:pwr-actinides-full}.
 \begin{figure}[H]
   \centering
   \includegraphics[width=4in]{figures/pwr/pwr_actinides_full.pdf}
-  \caption{Relative difference in actinide concetrations between OpenMC and
+  \caption{Relative difference in actinide concentrations between OpenMC and
   Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the full
   depletion chain.}
   \label{fig:pwr-actinides-full}
@@ -993,7 +993,7 @@ mirror those in \cref{fig:pwr-actinides-full}.
 \begin{figure}[H]
   \centering
   \includegraphics[width=4in]{figures/pwr/pwr_actinides_casl.pdf}
-  \caption{Relative difference in actinide concetrations between OpenMC and
+  \caption{Relative difference in actinide concentrations between OpenMC and
   Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the CASL
   depletion chain.}
   \label{fig:pwr-actinides-casl}
@@ -1009,13 +1009,13 @@ a few fission products show differences up to 0.5\%.
 \begin{figure}[H]
   \centering
   \includegraphics[width=4in]{figures/pwr/pwr_fp_full_average.pdf}
-  \caption{Relative difference in fission product concetrations between OpenMC
+  \caption{Relative difference in fission product concentrations between OpenMC
   and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
   full depletion chain and interpolated FPYs.}
   \label{fig:pwr-fp-full-average}
 \end{figure}
 
-\Cref{fig:pwr-fp-full-thermal} shows the predicted fission product concetrations
+\Cref{fig:pwr-fp-full-thermal} shows the predicted fission product concentrations
 when using the full depletion chain along with thermal FPYs. In this case,
 although most fission products are within 1\% of Serpent, they are
 systematically overpredicted other than a few nuclides. Because Serpent uses the
@@ -1037,7 +1037,7 @@ nuclides are shown in \cref{tab:fp-yields}.
 \begin{figure}[H]
   \centering
   \includegraphics[width=4in]{figures/pwr/pwr_fp_full_thermal.pdf}
-  \caption{Relative difference in fission product concetrations between OpenMC
+  \caption{Relative difference in fission product concentrations between OpenMC
   and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
   full depletion chain and thermal FPYs.}
   \label{fig:pwr-fp-full-thermal}
@@ -1077,7 +1077,7 @@ higher difference in $k_\text{eff}$ for the CASL depletion chain shown in
 \begin{figure}[H]
   \centering
   \includegraphics[width=4in]{figures/pwr/pwr_fp_casl_average.pdf}
-  \caption{Relative difference in fission product concetrations between OpenMC
+  \caption{Relative difference in fission product concentrations between OpenMC
   and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
   CASL depletion chain and interpolated FPYs.}
   \label{fig:pwr-fp-casl-average}
@@ -1091,7 +1091,7 @@ aforementioned reasons.
 \begin{figure}[H]
   \centering
   \includegraphics[width=4in]{figures/pwr/pwr_fp_casl_thermal.pdf}
-  \caption{Relative difference in fission product concetrations between OpenMC
+  \caption{Relative difference in fission product concentrations between OpenMC
   and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
   CASL depletion chain and thermal FPYs.}
   \label{fig:pwr-fp-casl-thermal}
@@ -1133,7 +1133,7 @@ The results for the PWR pincell model indicated that the reduced depletion chain
 results in identical behavior to the full depletion chain, so we have not
 included a case for the SFR assembly using the reduced depletion chain. Two
 coupled transport--depletion simulation with Serpent was carried out, one with
-probabilty tables turned on and one with them turned off. For all simulations,
+probability tables turned on and one with them turned off. For all simulations,
 20 inactive batches, 200 active batches, and \num{4.0e6} particles per batch
 were used, which resulted in an uncertainty on the effective multiplication
 factor of 3--4 pcm.
@@ -1195,7 +1195,7 @@ between the probability tables at \SI{600}{\kelvin} and \SI{900}{\kelvin}.
     \caption{CASL depletion chain}
     \label{fig:sfr-actinides-casl}
   \end{subfigure}
-  \caption{Relative difference in actinide concetrations between OpenMC and
+  \caption{Relative difference in actinide concentrations between OpenMC and
   Serpent for the SFR assembly model at 80, 180, 260, and 360 days with
   probability tables on.}
   \label{fig:sfr-actinides}
@@ -1203,7 +1203,7 @@ between the probability tables at \SI{600}{\kelvin} and \SI{900}{\kelvin}.
 
 When probability tables are turned off, very close agreement is observed between
 the predicted actinide concentrations in OpenMC and Serpent, as shown in
-\cref{fig:sfr-actinides-nop}. In this case, the actinide concetrations agree to
+\cref{fig:sfr-actinides-nop}. In this case, the actinide concentrations agree to
 within 0.01\% at all times during depletion for both the full and CASL depletion
 chains.
 \begin{figure}[H]
@@ -1219,7 +1219,7 @@ chains.
     \caption{CASL depletion chain}
     \label{fig:sfr-actinides-casl-nop}
   \end{subfigure}
-  \caption{Relative difference in actinide concetrations between OpenMC and
+  \caption{Relative difference in actinide concentrations between OpenMC and
   Serpent for the SFR assembly model at 80, 180, 260, and 360 days with
   probability tables off.}
   \label{fig:sfr-actinides-nop}
@@ -1244,7 +1244,7 @@ yield in the CASL depletion chain.
     \includegraphics[width=\textwidth]{figures/sfr/sfr_fp_casl_average.pdf}
     \caption{CASL depletion chain}
   \end{subfigure}
-  \caption{Relative difference in fission product concetrations between OpenMC
+  \caption{Relative difference in fission product concentrations between OpenMC
   and Serpent for the SFR assembly model at 80, 180, 260, and 360 days with
   probability tables on.}
   \label{fig:sfr-fp}
@@ -1269,7 +1269,7 @@ $^{85}$Kr being the notable outliers.
     \includegraphics[width=\textwidth]{figures/sfr/sfr_fp_casl_average_nop.pdf}
     \caption{CASL depletion chain}
   \end{subfigure}
-  \caption{Relative difference in fission product concetrations between OpenMC
+  \caption{Relative difference in fission product concentrations between OpenMC
   and Serpent for the SFR assembly model at 80, 180, 260, and 360 days with
   probability tables off.}
   \label{fig:sfr-fp-nop}
@@ -1320,7 +1320,7 @@ $k_\text{eff}$ and isotopic concentrations were observed when unresolved
 resonance region probability tables were turned on. These differences were found
 to be related to how the temperature dependence of cross sections is treated in
 the unresolved resonance region. In OpenMC, when the temperature of a material
-is inbetween two temperatures at which probability tables are tabulated,
+is between two temperatures at which probability tables are tabulated,
 statistical interpolation between the tables is performed. Serpent, on the other
 hand, uses probability tables at the lower tabulated temperature. For the SFR
 model, this results in lower parasitic neutron absorption in $^{238}$U, lower
