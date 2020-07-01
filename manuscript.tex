@@ -1357,6 +1357,14 @@ wider variety of transmutation reactions would need to be accounted for, and the
 ability to handle transmutation from a fixed, pulsed neutron source would be
 required.
 
+While the focus in this work has primarily been on correctness and accuracy, the
+performance of a coupled transport--depletion simulation is also an important
+consideration that directly impacts usability. The need to determine reaction
+rates for hundreds of nuclides leads to a significant performance degredation
+during a transport simulation. Research on methods to reduce the computational
+expense of obtaining transmutation reaction rates~\cite{salcedoperez2019mc} show
+promise but have yet to be incorporated in a release of OpenMC.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{Acknowledgments}
 
