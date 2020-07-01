@@ -122,8 +122,8 @@ code to the other. Thus, the actual transport/depletion codes themselves
 required no source code changes. In the last decade, many MC code developers
 have chosen to directly include a depletion solver as a first-rate feature,
 including MCNPX~\citep{waters2007aip} (which has since been merged into
-MCNP6~\citep{goorley2012nt}), Serpent~\citep{leppanen2015ane}, and
-MC21~\citep{griesheimer2015ane}.
+MCNP6~\citep{goorley2012nt}), Serpent~\citep{leppanen2015ane},
+MC21~\citep{griesheimer2015ane}, and RMC~\citep{wang2015ane}.
 
 In the present work, we describe a new depletion solver in OpenMC, an open
 source, community-developed MC particle transport code~\citep{romano2015ane1}.
@@ -176,8 +176,10 @@ Note that we have not included the spatial dependence of the flux or cross
 sections. For \cref{eq:depletion} to be accurate, the spatial variation of the
 reaction rates over the region which is being depleted should be small. For a
 reactor model, this may entail using a unique material in each fuel pin that is
-depleted separately. Ultimately, the user is responsible for deciding what level
-of spatial discretization is adequate for the problem at hand.
+depleted separately.\footnote{OpenMC includes functions for automatically
+differentiating materials in cells that are repeated throughout a geometry.}
+Ultimately, the user is responsible for deciding what level of spatial
+discretization is adequate for the problem at hand.
 
 \Cref{eq:depletion} simply states that the rate of change of $N_i$ is equal to
 the production rate minus the loss rate. Because the equation for $N_i$ depends
@@ -633,10 +635,13 @@ of the burnup matrix and the number of nuclides that are tracked during a
 transport solve. The depletion chain class in OpenMC's Python API includes a
 method for automatically reducing the size of the chain. Starting with a set of
 nuclides that must be included, the method will recursively go through all decay
-and reaction modes to determine what products may be produced. Using this method
-on the ENDF/B-VII.1 library starting from a list of all stable or very long
-lived (half-life greater than $10^{15}$ sec) nuclides reduces the total number
-of nuclides in the depletion chain from 3,820 to 1,693.
+and reaction modes to determine what products may be produced. This can help
+minimize both the size of the depletion matrix and the number of nuclides for
+which reaction rates must be tallied, thereby reducing the time spent in the
+depletion and transport solvers. Using this method on the ENDF/B-VII.1 library
+starting from a list of all stable or very long lived (half-life greater than
+$10^{15}$ sec) nuclides reduces the total number of nuclides in the depletion
+chain from 3,820 to 1,693.
 
 In addition to the full and reduced depletion chains, a simplified depletion
 chain based on the VERA depletion benchmark specification~\citep{kim2015casl},
@@ -754,7 +759,7 @@ entire system (separate from the tally for transmutation reaction rates). This
 method makes it possible to account for the energy dependence of the fission
 energy release data as well as the fact that neutrons and photons may leak out
 of the system, carrying away their energy with them. The latter effect may be
-particularly important for small, leaky systems.
+particularly important for small, high-leakage systems.
 
 \subsection{Implementation}
 

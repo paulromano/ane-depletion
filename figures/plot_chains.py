@@ -27,12 +27,12 @@ chain_reduced = chain_full.reduce(stable)
 
 def get_patch(z, a, **kwargs):
     n = a - z
-    return Rectangle((n-0.5, z-0.5), 1, 1, **kwargs)
+    return Rectangle((n-0.5, z-0.5), 1, 1, linewidth=0.001, **kwargs)
 
 fig, ax = plt.subplots()
 
-style_full = {'alpha': 0.3}
-style_reduced = {}
+style_full = {'color': '#bcd6e9'}
+style_reduced = {'color': '#1f77b4'}
 style_casl = {'color': 'orange'}
 
 for nuc in chain_full.nuclides:
