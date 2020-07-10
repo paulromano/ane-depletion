@@ -155,8 +155,8 @@ radioactive decay inside of an irradiated environment can be written as
 \begin{equation}
   \label{eq:depletion}
   \begin{split}
-  \frac{dN_i(t)}{dt} = &\sum\limits_j \left [ f_{j \rightarrow i}
-  \int_0^\infty dE \; \sigma_j (E, t) \phi(E,t) + \lambda_{j\rightarrow i}
+  \frac{dN_i(t)}{dt} = &\sum\limits_j \left [ \int_0^\infty dE \;
+  f_{j \rightarrow i}(E) \sigma_j (E, t) \phi(E,t) + \lambda_{j\rightarrow i}
   \right ] N_j(t) \\ &- \left [\int_0^\infty dE \; \sigma_i (E,t) \phi(E,t) +
   \sum\limits_j \lambda_{i\rightarrow j} \right ] N_i(t), \quad i=1,\dots,n
   \end{split}
@@ -167,7 +167,7 @@ where
   N_i(t) &\equiv \text{density of nuclide $i$ at time $t$} \\
   \sigma_i(E,t) &\equiv \text{transmutation cross section for nuclide $i$ at energy $E$ and time $t$} \\
   \phi(E,t) &\equiv \text{neutron flux at energy $E$ and time $t$} \\
-  f_{j \rightarrow i} &\equiv \text{fraction of transmutation reactions in nuclide $j$ that produce nuclide $i$} \\
+  f_{j \rightarrow i}(E) &\equiv \text{fraction of transmutation reactions in nuclide $j$ that produce nuclide $i$} \\
   \lambda_{j \rightarrow i} &\equiv \text{decay constant for decay modes in nuclide $j$ that produce nuclide $i$} \\
   n &\equiv \text{total number of nuclides.}
   \end{split}
@@ -206,19 +206,24 @@ containing the decay and transmutation coefficients. Note that the burnup matrix
 depends on $\vect{n}$ because the solution to the transport equation depends
 on the nuclide densities, thereby making \cref{eq:depletion-matrix-t} nonlinear.
 
-Although the neutron transport equation is time-dependent, the timescale over
-which material compositions change is sufficiently long such that the transport
-equation can be solved as a steady state equation. Without loss of generality,
-let us write the burnup matrix solely as a function of $\vect{n}$ so that
-\cref{eq:depletion-matrix-t} becomes
+Evaluating $\vect{A}$ for a given $\vect{n}$ and $t$ is equivalent to solving
+the neutron transport equation to obtain transmutation reaction rates and
+combining that information with decay and fission product yield data to
+construct the matrix of coefficients. Although the transport equation is
+time-dependent, the timescale over which material compositions change is
+sufficiently long such that the transport equation can be solved as a steady
+state equation. This implies that the only ``input'' that is required by the
+transport solver is $\vect{n}$, as opposed to $\vect{n}$ and $t$. Without loss of
+generality, let us write the burnup matrix solely as a function of $\vect{n}$ so
+that \cref{eq:depletion-matrix-t} becomes
 \begin{equation}
   \label{eq:depletion-matrix}
   \frac{d\vect{n}}{dt} = \vect{A}(\vect{n})\vect{n}, \quad \vect{n}(0) =
   \vect{n}_0.
 \end{equation}
-This better reflects the fact that the time, $t$, is generally not an input to
-the transport equation, and hence the burnup matrix is uniquely determined by
-the value of $\vect{n}$.
+This better reflects the fact that the burnup matrix is uniquely determined by
+the value of $\vect{n}$. To be clear, $\vect{A}$ is still a function of time but
+only transitively through the dependence on $\vect{n}(t)$.
 
 The principle difficulty of solving \cref{eq:depletion-matrix} is the fact that
 the elements of $\vect{A}$ are not constant with respect to time. If
@@ -259,7 +264,9 @@ various methods simpler.
 OpenMC doesn't rely on a single time integration method but instead has several
 methods available that the user can choose. In the following sections, we
 outline the available methods in OpenMC, several of which have not been
-previously described in the literature.
+fully described in the literature. An exhaustive analysis of these time
+integration methods and their merits can be found in the thesis of
+\citet{josey2017phd}.
 
 \subsubsection{Predictor Method}
 
@@ -378,9 +385,7 @@ truncate the $\vect{\Omega}$ series at an appropriate order and apply an
 approximation to the multivariate integrals in \cref{eq:magnus-terms}. In
 particular, OpenMC uses a fourth-order commutator-free\footnote{The integrator
 is called commutator-free because it does not require computing any matrix
-commutators like those that appear in \cref{eq:magnus-terms}. Other methods
-based on the Magnus expansion do require computing matrix commutators, some of
-which were explored by \citet{josey2017phd}.} exponential
+commutators like those that appear in \cref{eq:magnus-terms}.} exponential
 integrator~\citep{blanes2006anm} that is derived from the Magnus expansion in
 order to solve \cref{eq:linear-ode}. In this approximation, the Magnus expansion
 is truncated at two terms and then expressed as the composition of two
@@ -490,7 +495,7 @@ unconditionally stable. The main idea is to replace $\vect{A}(\vect{n}_i)$ with
 $\vect{A}(\vect{n}_{i+1})$ in \cref{eq:predictor}:
 \begin{equation}
   \label{eq:implicit}
-  \vect{n}_{i=1} = \exp \left( h\vect{A}(\vect{n}_{i+1}) \right) \vect{n}_i.
+  \vect{n}_{i+1} = \exp \left( h\vect{A}(\vect{n}_{i+1}) \right) \vect{n}_i.
 \end{equation}
 This results in a non-linear equation for $\vect{n}_{i+1}$ that cannot be solved
 directly. However, it is possible to solve for $\vect{n}_{i+1}$ using a
@@ -507,9 +512,7 @@ obtaining methods that are unconditionally stable and accurate with longer
 timesteps. In OpenMC, stochastic implicit versions of the CE/LI and LE/QI
 methods have also been implemented. The basis for the algorithm is to iterate on
 $\vect{n}_{i+1}^p$ used in \cref{eq:linear-interp}, obtaining progressively
-better estimates that are then used to solve \cref{eq:linear-ode}. A full
-discussion of the algorithm and its performance and tradeoffs can be found in
-\citep{josey2017phd}.
+better estimates that are then used to solve \cref{eq:linear-ode}.
 
 \subsubsection{Summary}
 
@@ -523,10 +526,7 @@ evaluations that are performed per timestep. On the other hand, methods that
 require more evaluations generally achieve higher accuracy. The predictor method
 only requires one evaluation and its error converges as $\mathcal{O}(h)$. The
 CE/CM method requires two evaluations and is thus twice as expensive as the
-predictor method, but achieves an error of $\mathcal{O}(h^2)$. An exhaustive
-description of time integration methods and their merits can be found in the
-thesis of \citet{josey2017phd}.
-
+predictor method, but achieves an error of $\mathcal{O}(h^2)$.
 
 \subsection{Matrix Exponential}
 
@@ -680,24 +680,25 @@ using a tracklength estimator.
 ground state or an excited state. If the excited state is a metastable state
 (having an unusually long half-life), it is important to account for this
 difference during depletion. The most well-known example is capture in
-$^{241}$Am, which can produce either $^{242}$Am or $^{242\text{m}}$Am. Because the
-metastable state has a significantly longer half-life than the ground state, it
-is important to account for the branching of the capture reaction in $^{241}$Am
-to accurately predict the production of higher actinides~\citep{haeck2012nse}.
-This is complicated by the fact that the branching ratio may depend on the
-incident neutron energy causing capture.
+$^{241}$Am, which can produce either $^{242}$Am or $^{242\text{m}}$Am. Because
+the metastable state has a significantly longer half-life than the ground state,
+it is important to account for the branching of the capture reaction in
+$^{241}$Am to accurately predict the production of higher
+actinides~\citep{haeck2012nse}. This is complicated by the fact that the
+branching ratio may depend on the incident neutron energy causing capture (hence
+why $f_{j\rightarrow i}$ in \cref{eq:depletion} depends on $E$).
 
 OpenMC does not currently implement a method to handle energy-dependent capture
-branching ratios directly. However, the depletion chain file does allow a
-reaction to be listed multiple times with different branching ratios that result
-in different products. Spectrum-averaged capture branching ratios have been
-computed in LWR and SFR spectra and are available at
-\url{https://openmc.org/depletion-chains}. Within the Python API, the class
-representing a depletion chain allows branching ratios to be easily retrieved
-and changed. We note that while this treatment doesn't accurately account for
-the change in the capture branching ratio with increasing burnup (due to
-spectral changes), these changes are generally much smaller than the differences
-in capture branching ratios between nuclear data evaluations.
+branching ratios directly and treats $f_{j\rightarrow i}$ as a constant.
+However, the depletion chain file does allow a reaction to be listed multiple
+times with different branching ratios that result in different products.
+Spectrum-averaged capture branching ratios have been computed in LWR and SFR
+spectra and are available at \url{https://openmc.org/depletion-chains}. Within
+the Python API, the class representing a depletion chain allows branching ratios
+to be easily retrieved and changed. We note that while this treatment doesn't
+accurately account for the change in the capture branching ratio with increasing
+burnup (due to spectral changes), these changes are generally much smaller than
+the differences in capture branching ratios between nuclear data evaluations.
 
 \subsubsection{Fission Product Yields}
 \label{sec:fpy}
