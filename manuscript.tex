@@ -352,7 +352,8 @@ is, if we divide the timestep into $m$ substeps, the solution is given by
 While using substeps is a reasonable approach for solving \cref{eq:linear-ode},
 there are other methods as well. For example, some codes use a backward
 differentiation formula rather than a method based on an exponential
-integrator~\citep{carpenter2009mc,hykes2017mc,sublet2017nds}.
+integrator~\citep{carpenter2009mc,hykes2017mc,sublet2017nds}. The next section
+shows one such example that is used in OpenMC.
 
 \subsubsection{Magnus expansion integrators}
 
@@ -954,13 +955,13 @@ which resulted in an uncertainty on the effective multiplication factor of about
 
 \Cref{fig:pwr-keff} shows the difference between $k_\text{eff}$ calculated by
 OpenMC and Serpent. The blue points correspond to results using the full
-depletion chain, the red points correspond to points using the reduced chain,
-and the green points correspond to results using the CASL chain. For each chain,
-the use of interpolated FPYs is denoted by circles and thermal FPYs by x's. At
-zero days, the difference in $k_\text{eff}$ between OpenMC and Serpent is not
-statistically significant. As the burnup increases, the difference for the full
-chain cases rises to about 20 pcm. The reduced chain case exhibits the exact
-same behavior as the full chain as one would expect. Use of the CASL chain
+depletion chain, the gray points correspond to points using the reduced chain,
+and the orange points correspond to results using the CASL chain. For each
+chain, the use of interpolated FPYs is denoted by circles and thermal FPYs by
+x's. At zero days, the difference in $k_\text{eff}$ between OpenMC and Serpent
+is not statistically significant. As the burnup increases, the difference for
+the full chain cases rises to about 20 pcm. The reduced chain case exhibits the
+exact same behavior as the full chain as one would expect. Use of the CASL chain
 results in a slightly larger difference between OpenMC and Serpent at 50 MWd/kg,
 about 40 pcm. We also see that for both the full and CASL chains, changing the
 method for handling FPY energy dependence doesn't appear to have much of an
@@ -1020,7 +1021,7 @@ a few fission products show differences up to 0.5\%.
   \includegraphics[width=4in]{figures/pwr_fp_full_average.pdf}
   \caption{Relative difference in fission product concentrations between OpenMC
   and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
-  full depletion chain and interpolated FPYs.}
+  full depletion chain and interpolated FPYs in OpenMC.}
   \label{fig:pwr-fp-full-average}
 \end{figure}
 
@@ -1048,7 +1049,7 @@ nuclides are shown in \cref{tab:fp-yields}.
   \includegraphics[width=4in]{figures/pwr_fp_full_thermal.pdf}
   \caption{Relative difference in fission product concentrations between OpenMC
   and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
-  full depletion chain and thermal FPYs.}
+  full depletion chain and thermal FPYs in OpenMC.}
   \label{fig:pwr-fp-full-thermal}
 \end{figure}
 \begin{table}[htbp]
@@ -1088,7 +1089,7 @@ higher difference in $k_\text{eff}$ for the CASL depletion chain shown in
   \includegraphics[width=4in]{figures/pwr_fp_casl_average.pdf}
   \caption{Relative difference in fission product concentrations between OpenMC
   and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
-  CASL depletion chain and interpolated FPYs.}
+  CASL depletion chain and interpolated FPYs in OpenMC.}
   \label{fig:pwr-fp-casl-average}
 \end{figure}
 
@@ -1102,7 +1103,7 @@ aforementioned reasons.
   \includegraphics[width=4in]{figures/pwr_fp_casl_thermal.pdf}
   \caption{Relative difference in fission product concentrations between OpenMC
   and Serpent for the PWR pincell model at 5, 12.5, 30, and 50 MWd/kg using the
-  CASL depletion chain and thermal FPYs.}
+  CASL depletion chain and thermal FPYs in OpenMC.}
   \label{fig:pwr-fp-casl-thermal}
 \end{figure}
 
@@ -1153,7 +1154,7 @@ factor of 3--4 pcm.
 
 \Cref{fig:sfr-keff} shows the difference between $k_\text{eff}$ calculated by
 OpenMC and Serpent as the assembly is depleted. The blue points correspond to
-results using the full depletion chain, and the green points correspond to
+results using the full depletion chain, and the orange points correspond to
 results using the CASL chain. For each chain, simulations with probability
 tables on are denoted by circles and simulations without probability tables are
 denoted by squares. Unlike in the PWR pincell case, there is a statistically
@@ -1337,7 +1338,9 @@ production of $^{239}$Pu, and ultimately a lower $k_\text{eff}$. After depleting
 for 360 days, there was a 100 pcm difference between OpenMC and Serpent due to
 this effect. Although this is not a huge difference, users who are simulating
 problems with a non-uniform temperature distribution should be aware of this
-behavior.
+behavior. This difference could be mitigated by using nuclear data processed on
+a finer temperature grid---in our results, cross sections and probability table
+data were being interpolated over a rather large \SI{300}{\kelvin} interval.
 
 Finally, we remark that although we did observe some differences between OpenMC
 and Serpent, most of the differences were related to deficiencies in the nuclear
@@ -1363,8 +1366,8 @@ performance of a coupled transport--depletion simulation is also an important
 consideration that directly impacts usability. The need to determine reaction
 rates for hundreds of nuclides leads to a significant performance degredation
 during a transport simulation. Research on methods to reduce the computational
-expense of obtaining transmutation reaction rates~\cite{salcedoperez2019mc} show
-promise but have yet to be incorporated in a release of OpenMC.
+expense of obtaining transmutation reaction rates~\citep{salcedoperez2019mc}
+show promise but have yet to be incorporated in a release of OpenMC.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{Acknowledgments}

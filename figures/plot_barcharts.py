@@ -21,6 +21,8 @@ rcParams['text.latex.preamble'] = [
     r'\usepackage{amsmath}',
 ]
 
+plt.style.use('tableau-colorblind10')
+
 print('Loading PWR data...')
 results_full_thermal = ResultsList.from_hdf5("pwr/depletion_results_full_thermal.h5")
 #results_full_cutoff = ResultsList.from_hdf5("pwr/depletion_results_full_cutoff.h5")

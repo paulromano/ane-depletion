@@ -17,6 +17,8 @@ rcParams['text.latex.preamble'] = [
     r'\usepackage{amsmath}',
 ]
 
+plt.style.use('tableau-colorblind10')
+
 # Read Serpent results --------------------------------------------------------
 
 def get_serpent_keff(filename):
@@ -57,11 +59,11 @@ burnup = [
 ]
 
 fig, ax = plt.subplots()
-ax.plot(burnup, difference(results_full_average, serpent_pwr), 'bo', label='Full, Interpolated FPY')
-ax.plot(burnup, difference(results_full_thermal, serpent_pwr), 'bx', label='Full, Thermal FPY')
-ax.plot(burnup, difference(results_reduced, serpent_pwr), 'ro', label='Reduced, Interpolated FPY')
-ax.plot(burnup, difference(results_casl_average, serpent_pwr), 'go', label='CASL, Interpolated FPY')
-ax.plot(burnup, difference(results_casl_thermal, serpent_pwr), 'gx', label='CASL, Thermal FPY')
+ax.plot(burnup, difference(results_full_average, serpent_pwr), 'o', color='C0', label='Full, Interpolated FPY')
+ax.plot(burnup, difference(results_full_thermal, serpent_pwr), 'x', color='C0', label='Full, Thermal FPY')
+ax.plot(burnup, difference(results_reduced, serpent_pwr), 'o', color='C2', label='Reduced, Interpolated FPY')
+ax.plot(burnup, difference(results_casl_average, serpent_pwr), 'go', color='C1', label='CASL, Interpolated FPY')
+ax.plot(burnup, difference(results_casl_thermal, serpent_pwr), 'gx', color='C1', label='CASL, Thermal FPY')
 ax.plot(color='k', linestyle='--')
 ax.set_xlabel("Burnup [MWd/kg]")
 ax.set_ylabel(r"$k_\text{OpenMC} - k_\text{Serpent}$ [pcm]")
@@ -75,10 +77,10 @@ plt.close()
 days = np.linspace(0.0, 360.0, 19)
 
 fig, ax = plt.subplots()
-ax.plot(days, difference(results_sfr_full, serpent_sfr), 'bo', label='Full, ptables')
-ax.plot(days, difference(results_sfr_casl, serpent_sfr), 'go', label='CASL, ptables')
-ax.plot(days, difference(results_sfr_full_nop, serpent_sfr_nop), 'bs', markerfacecolor='none', label='Full, no ptables')
-ax.plot(days, difference(results_sfr_casl_nop, serpent_sfr_nop), 'gs', markerfacecolor='none', label='CASL, no ptables')
+ax.plot(days, difference(results_sfr_full, serpent_sfr), 'o', color='C0', label='Full, ptables')
+ax.plot(days, difference(results_sfr_casl, serpent_sfr), 'o', color='C1', label='CASL, ptables')
+ax.plot(days, difference(results_sfr_full_nop, serpent_sfr_nop), 's', color='C0', markerfacecolor='none', label='Full, no ptables')
+ax.plot(days, difference(results_sfr_casl_nop, serpent_sfr_nop), 's', color='C1', markerfacecolor='none', label='CASL, no ptables')
 ax.plot(color='k', linestyle='--')
 ax.set_xlabel("Time [days]")
 ax.set_ylabel(r"$k_\text{OpenMC} - k_\text{Serpent}$ [pcm]")
