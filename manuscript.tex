@@ -547,16 +547,16 @@ exponential is approximated as
 where $k$ is the order of the approximation and $\alpha_0$,
 $\widetilde{\alpha}_\ell$, and $\theta_\ell$ are coefficients that have been
 tabulated for orders up to $k=48$. Rather than computing the full approximation
-and then multiplying it by a vector, \cref{alg:cram}\footnote{The original
-description of the algorithm presented by \citet{pusa2016nse} contains a typo.}
-is used to incrementally apply the terms within the product. The $k$th order
-approximation for CRAM requires solving $k/2$ sparse linear systems. OpenMC
-relies on functionality from scipy.sparse.linalg~\citep{virtanen2020nm} for
-solving the linear system.
+and then multiplying it by a vector, \cref{alg:cram} is used to incrementally
+apply the terms within the product. The $k$th order approximation for CRAM
+requires solving $k/2$ sparse linear systems. OpenMC relies on functionality
+from scipy.sparse.linalg~\citep{virtanen2020nm} for solving the linear system.
 \begin{algorithm}[H]
-  \caption{Incomplete partial fraction form of CRAM.}
+  \caption{Incomplete partial fraction form of CRAM. Note that the original
+  description of the algorithm presented by \citet{pusa2016nse} contains a
+  typo.}
   \label{alg:cram}
-  \begin{algorithmic}[1]
+  \begin{algorithmic}
     \State $\vect{n} \gets \vect{n_0}$
     \For{$\ell \gets 1$ \textbf{to} $k/2$}
       \State $\vect{n} \gets \vect{n} + 2\text{Re}(\widetilde{\alpha}_\ell
