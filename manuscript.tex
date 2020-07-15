@@ -58,7 +58,7 @@
 
 \address[anl]{Argonne National Laboratory, 9700 S. Cass Ave, Lemont, IL 60439, United States}
 \address[lanl]{Los Alamos National Laboratory, P.O. Box 1663, Los Alamos, NM 87545, United States}
-\address[gatech]{Georgia Institute of Technology, 770 State St NW, Atlanta, GA 30318, United States}
+\address[gatech]{Georgia Institute of Technology, 770 State St. NW, Atlanta, GA 30318, United States}
 \address[tsinghua]{Institute of Nuclear and New Energy Technology, Tsinghua University, Beijing, China}
 
 \begin{abstract}
@@ -68,10 +68,10 @@
   enables an in-memory transport--depletion coupling. Multiple integration
   methods for advancing in time have been implemented and exhibit tradeoffs in
   cost, accuracy, and memory use. For all time integration methods, evaluation
-  of the matrix exponential is performed using the incomplete partial fraction
+  of the matrix exponential is performed by using the incomplete partial fraction
   form of the Chebyshev rational approximation method.
 
-  Simulations of a PWR pincell and an SFR assembly were carried out with OpenMC
+  Simulations of a pressurized water reactor (PWR) pincell and a sodium-cooled fast reactor (SFR) assembly were carried out with OpenMC
   and Serpent. For both problems, the use of a high-fidelity depletion chain
   results in predictions of $k_\text{eff}$ that agree within 20--30 pcm between
   OpenMC and Serpent. Predicted actinide concentrations were found to agree to a
@@ -79,7 +79,7 @@
   agree within 1\%. The few cases where larger differences were observed can be
   attributed either to differences in how the energy dependence of fission
   product yields is handled or deficiencies in the nuclear data used. OpenMC
-  simulations of the PWR and SFR problems using a simplified 228 nuclide
+  simulations of the PWR and SFR problems using a simplified 228-nuclide
   depletion chain demonstrate that it achieves accuracy close to that of the
   full, high-fidelity depletion chain.
 \end{abstract}
@@ -94,7 +94,7 @@
 \section{Introduction}
 
 When a material in a system is subject to irradiation over a long period of
-time, nuclides within the material will transmute due to nuclear reactions and
+time, nuclides within the material will transmute because of nuclear reactions and
 spontaneous radioactive decay. The time-dependent process by which nuclides
 transmute under irradiation is known as \emph{depletion}, \emph{burnup}, or
 \emph{transmutation}. Modeling this process plays an important role in the
@@ -107,7 +107,7 @@ neutron transport equation. Nuclear reaction rates, which determine the rate at
 which nuclides are transmuted, must be provided from a transport code.
 Conversely, the change in material composition directly affects the solution of
 the transport equation. As will be shown in \cref{sec:methods}, this results in
-a non-linear coupling between transport and depletion. The implication is that
+a nonlinear coupling between transport and depletion. The implication is that
 depletion codes are rarely used in isolation---normally, they are directly
 coupled with a neutron transport code.
 
@@ -119,7 +119,7 @@ efforts involved taking existing MC and depletion codes, such as
 MCNP~\citep{goorley2012nt} and ORIGEN~\citep{croff1983nt}, and putting a
 ``wrapper'' around them that orchestrated the transfer of solutions from one
 code to the other. Thus, the actual transport/depletion codes themselves
-required no source code changes. In the last decade, many MC code developers
+required no source code changes. In the past decade, many MC code developers
 have chosen to directly include a depletion solver as a first-rate feature,
 including MCNPX~\citep{waters2007aip} (which has since been merged into
 MCNP6~\citep{goorley2012nt}), Serpent~\citep{leppanen2015ane},
@@ -127,13 +127,13 @@ MC21~\citep{griesheimer2015ane}, and RMC~\citep{wang2015ane}.
 
 In the present work, we describe a new depletion solver in OpenMC, an open
 source, community-developed MC particle transport code~\citep{romano2015ane1}.
-To date, OpenMC has not had a built-in depletion solver. This has led to
-numerous efforts in the community toward developing coupled transport--depletion
+To date, OpenMC has not had a built-in depletion solver. This lack has led to
+numerous efforts in the community to develop coupled transport--depletion
 calculations with OpenMC~\citep{gul2017ane, lanversin2017icone,
 lanversin2019phd, liu2019nst, zhuang2020pne, zhao2020ned, zhao2020cpc,
 zhang2020ane}. While these efforts have proven the viability of performing such
 coupled calculations with OpenMC, none of them has resulted in a validated,
-openly-available, and generalized capability that OpenMC users can take
+openly available, and generalized capability that OpenMC users can take
 advantage of. The capability that is described herein is part of the OpenMC
 project and can be found in version 0.11~\citep{openmc-0110} of the code or
 later.
@@ -141,8 +141,8 @@ later.
 The paper is organized as follows. In \cref{sec:methods}, we describe the
 methods and algorithms used to solve the depletion equations, the implementation
 within OpenMC, and how nuclear data is used to create depletion chains. Then, in
-\cref{sec:results}, we present results on two problems that demonstrate the
-accuracy of OpenMC when compared to Serpent~\citep{leppanen2015ane}. In
+\cref{sec:results}, we present results for two problems that demonstrate the
+accuracy of OpenMC when compared with Serpent~\citep{leppanen2015ane}. In
 \cref{sec:conclusions}, we summarize the findings, discuss limitations, and
 provide commentary on future avenues of inquiry that may be promising.
 
@@ -151,14 +151,14 @@ provide commentary on future avenues of inquiry that may be promising.
 \label{sec:methods}
 
 The equation that governs the transmutation of nuclides by nuclear reactions and
-radioactive decay inside of an irradiated environment can be written as
+radioactive decay inside an irradiated environment can be written as
 \begin{equation}
   \label{eq:depletion}
   \begin{split}
   \frac{dN_i(t)}{dt} = &\sum\limits_j \left [ \int_0^\infty dE \;
   f_{j \rightarrow i}(E) \sigma_j (E, t) \phi(E,t) + \lambda_{j\rightarrow i}
   \right ] N_j(t) \\ &- \left [\int_0^\infty dE \; \sigma_i (E,t) \phi(E,t) +
-  \sum\limits_j \lambda_{i\rightarrow j} \right ] N_i(t), \quad i=1,\dots,n
+  \sum\limits_j \lambda_{i\rightarrow j} \right ] N_i(t), \quad i=1,\dots,n ,
   \end{split}
 \end{equation}
 where
@@ -174,7 +174,7 @@ where
 \end{equation*}
 Note that we have not included the spatial dependence of the flux or cross
 sections. For \cref{eq:depletion} to be accurate, the spatial variation of the
-reaction rates over the region which is being depleted should be small. For a
+reaction rates over the region that is being depleted should be small. For a
 reactor model, this may entail using a unique material in each fuel pin that is
 depleted separately.\footnote{OpenMC includes functions for automatically
 differentiating materials in cells that are repeated throughout a geometry.}
@@ -184,7 +184,7 @@ discretization is adequate for the problem at hand.
 \Cref{eq:depletion} simply states that the rate of change of $N_i$ is equal to
 the production rate minus the loss rate. Because the equation for $N_i$ depends
 on the density of other nuclides, $\{N_j \,|\, j \ne i\}$, \cref{eq:depletion}
-represents a system of first-order ordinary differential equations (ODEs). To
+represents a system of first-order ordinary differential equations (ODEs). In order to
 form a proper initial value problem, the nuclide densities at time 0 must be
 specified:
 \begin{equation}
@@ -194,7 +194,7 @@ These equations can be written more compactly in matrix notation as
 \begin{equation}
   \label{eq:depletion-matrix-t}
   \frac{d\vect{n}}{dt} = \vect{A}(\vect{n},t)\vect{n}, \quad \vect{n}(0) =
-  \vect{n}_0
+  \vect{n}_0,
 \end{equation}
 where
 \begin{equation}
@@ -225,7 +225,7 @@ This better reflects the fact that the burnup matrix is uniquely determined by
 the value of $\vect{n}$. To be clear, $\vect{A}$ is still a function of time but
 only transitively through the dependence on $\vect{n}(t)$.
 
-The principle difficulty of solving \cref{eq:depletion-matrix} is the fact that
+The principal difficulty in solving \cref{eq:depletion-matrix} is that
 the elements of $\vect{A}$ are not constant with respect to time. If
 $\vect{A}$ is constant, \cref{eq:depletion-matrix} admits a closed-form
 solution,
@@ -236,34 +236,34 @@ solution,
 The exponential of a matrix $\vect{X}$ is defined by the power series
 expansion
 \begin{equation}
-  \exp(\vect{X}) = \sum\limits_{k=0}^\infty \frac{\vect{X}^k}{k!}
+  \exp(\vect{X}) = \sum\limits_{k=0}^\infty \frac{\vect{X}^k}{k!},
 \end{equation}
 where $\vect{X}^0 = \vect{I}$. Solving \cref{eq:depletion-matrix} usually
 involves two separate components:
 \begin{enumerate}
-  \item Use of a numerical method to integrate \cref{eq:depletion-matrix}
+  \item Using a numerical method to integrate \cref{eq:depletion-matrix}
   forward in time, usually in a form that involves taking one or more matrix
-  exponentials, and
+  exponentials. 
   \item Evaluating the matrix exponential or, equivalently, the action of a
-  matrix exponential on a vector.
+  matrix exponential on a vector
 \end{enumerate}
 We will henceforth refer to the first component as \emph{time integration}. Let
-us now consider how each of these components are treated in OpenMC.
+us now consider how each of these components is treated in OpenMC.
 
 \subsection{Time Integration}
 \label{sec:time_integration}
 
 Because an analytical solution to \cref{eq:depletion-matrix} is not available,
 one must resort to using a numerical method that generates approximate solutions
-in discrete increments. The problem we need to solve then is: given $\vect{n}_i
+in discrete increments. The problem we need to solve then is: Given $\vect{n}_i
 \equiv \vect{n}(t_i)$, what is the value of $\vect{n}_{i+1} \equiv
 \vect{n}(t_{i+1}) = \vect{n}(t_i + h)$, with $h$ being the step size? Without
-loss of generality, we shall choose $t_i=0$ as it makes the presentation of
+loss of generality, we  choose $t_i=0$ because it makes the presentation of
 various methods simpler.
 
-OpenMC doesn't rely on a single time integration method but instead has several
+OpenMC does not rely on a single time integration method but instead has several
 methods available that the user can choose. In the following sections, we
-outline the available methods in OpenMC, several of which have not been
+outline these methods in OpenMC, several of which have not been
 fully described in the literature. An exhaustive analysis of these time
 integration methods and their merits can be found in the thesis of
 \citet{josey2017phd}.
@@ -271,7 +271,7 @@ integration methods and their merits can be found in the thesis of
 \subsubsection{Predictor Method}
 
 The simplest numerical method for solving \cref{eq:depletion-matrix} over a
-timestep is known as the \emph{predictor} method. It proceeds by assuming that
+timestep is known as the \emph{predictor} method. It assumes that
 $\vect{A}$ is constant over the timestep and assumes the value at the
 beginning of the step. The solution then follows directly from
 \cref{eq:constant-A}:
@@ -291,8 +291,8 @@ improved accuracy over the predictor method. The simplest of these methods is
 the CE/CM (constant extrapolation, constant midpoint) algorithm, which is the
 default algorithm used in MCNP6~\citep{fensin2006tans}. In this method,
 $\vect{A}$ is evaluated at the beginning of the step and used to deplete the
-composition over half the step. Then, $\vect{A}$ is reevaluated using the
-predicted middle-of-step composition and used to deplete over the full step. The
+composition over half the step. Then, $\vect{A}$ is reevaluated by using the
+predicted middle-of-step composition and is used to deplete over the full step. The
 algorithm can be expressed as
 \begin{equation}
   \begin{split}
@@ -307,7 +307,7 @@ accurate.
 More sophisticated predictor--corrector methods have been introduced by
 \citet{isotalo2011ane2,isotalo2011ane3}. In the CE/LI (constant extrapolation,
 linear interpolation) method, the end-of-step composition is first predicted
-using $\vect{A}(\vect{n}_i)$:
+by using $\vect{A}(\vect{n}_i)$:
 \begin{equation}
   \vect{n}_{i+1}^p = \exp \left( h\vect{A}(\vect{n}_i) \right) \vect{n}_i.
 \end{equation}
@@ -317,7 +317,7 @@ $\vect{A}(\vect{n}_i)$ and $\vect{A}\left(\vect{n}_{i+1}^p\right)$.
 \Cref{eq:depletion-matrix} thus becomes
 \begin{equation}
   \label{eq:linear-ode}
-  \frac{d\vect{n}}{dt} = \hat{\vect{A}}(t) \vect{n}
+  \frac{d\vect{n}}{dt} = \hat{\vect{A}}(t) \vect{n},
 \end{equation}
 where
 \begin{equation}
@@ -325,7 +325,7 @@ where
   \hat{\vect{A}}(t) = \left ( 1 - \frac{t}{h} \right) \vect{A}(\vect{n}_i) +
   \frac{t}{h} \vect{A}\left(\vect{n}_{i+1}^p \right).
 \end{equation}
-We see that $\hat{\vect{A}}$ no longer depends on $\vect{n}$ thereby making
+We see that $\hat{\vect{A}}$ no longer depends on $\vect{n}$, thereby making
 \cref{eq:linear-ode} a linear nonautonomous ODE. Because $\hat{\vect{A}}$ is a
 function of time, an approximation is still needed to obtain $\vect{n}_{i+1}$.
 The simplest approach~\citep{isotalo2011ane2} is to average
@@ -350,12 +350,12 @@ is, if we divide the timestep into $m$ substeps, the solution is given by
   \end{split}
 \end{equation}
 While using substeps is a reasonable approach for solving \cref{eq:linear-ode},
-there are other methods as well. For example, some codes use a backward
+other methods are also available. For example, some codes use a backward
 differentiation formula rather than a method based on an exponential
 integrator~\citep{carpenter2009mc,hykes2017mc,sublet2017nds}. The next section
 shows one such example that is used in OpenMC.
 
-\subsubsection{Magnus expansion integrators}
+\subsubsection{Magnus Expansion Integrators}
 
 Any linear approximation of \cref{eq:depletion-matrix} characterized by
 $\vect{A}$ that depends only on time, such as \cref{eq:linear-ode}, has an
@@ -374,7 +374,7 @@ The first three terms of the expansion are given by
     \vect{\Omega}_1(t) &= \int_0^t dt_1 \vect{A}(t_1) \\
     \vect{\Omega}_2(t) &= \int_0^t dt_1 \int_0^{t_1} dt_2 [\vect{A}(t_1), \vect{A}(t_2) ] \\
     \vect{\Omega}_3(t) &= \int_0^t dt_1 \int_0^{t_1} dt_2 \int_0^{t_2} dt_3
-      \left ( [\vect{A}(t_1), [\vect{A}(t_2), \vect{A}(t_3)]] + [\vect{A}(t_3), [\vect{A}(t_2), \vect{A}(t_1)]] \right )
+      \left ( [\vect{A}(t_1), [\vect{A}(t_2), \vect{A}(t_3)]] + [\vect{A}(t_3), [\vect{A}(t_2), \vect{A}(t_1)]] \right ),
   \end{split}
 \end{equation}
 where $[\vect{A},\vect{B}] = \vect{A}\vect{B} - \vect{B}\vect{A}$ is a matrix
@@ -386,7 +386,7 @@ truncate the $\vect{\Omega}$ series at an appropriate order and apply an
 approximation to the multivariate integrals in \cref{eq:magnus-terms}. In
 particular, OpenMC uses a fourth-order commutator-free\footnote{The integrator
 is called commutator-free because it does not require computing any matrix
-commutators like those that appear in \cref{eq:magnus-terms}.} exponential
+commutators as do those that appear in \cref{eq:magnus-terms}.} exponential
 integrator~\citep{blanes2006anm} that is derived from the Magnus expansion in
 order to solve \cref{eq:linear-ode}. In this approximation, the Magnus expansion
 is truncated at two terms and then expressed as the composition of two
@@ -395,7 +395,7 @@ resulting method is
 \begin{equation}
   \label{eq:compose4}
   \vect{n}_{i+1} = \exp (a_2 \vect{A}_1 + a_1 \vect{A}_2)
-  \exp (a_1 \vect{A}_1 + a_2 \vect{A}_2) \vect{n}_i
+  \exp (a_1 \vect{A}_1 + a_2 \vect{A}_2) \vect{n}_i ,
 \end{equation}
 where $\vect{A}_1$ and $\vect{A}_2$ correspond to $\hat{\vect{A}}$ evaluated at
 the nodes of a two-point Gauss-Legendre quadrature over the interval $[0,h]$:
@@ -423,11 +423,11 @@ fourth-order commutator-free Magnus integrator:
 exponentials, whereas the CE/LI method with substeps, \cref{eq:celi-substeps},
 requires two transport solutions and $m$ matrix exponentials. A comparison of
 these approaches has shown that \cref{eq:celi-cfq4} achieves better accuracy
-than the use of five substeps~\citep{josey2017phd}. OpenMC also includes an
+than does the use of five substeps~\citep{josey2017phd}. OpenMC also includes an
 integrator based on the LE/QI (linear extrapolation, quadratic interpolation)
-method~\citep{isotalo2011ane2} where the integration of \cref{eq:linear-ode} (in
+method~\citep{isotalo2011ane2}, where the integration of \cref{eq:linear-ode} (in
 which case $\hat{\vect{A}}(t)$ is represented by a quadratic polynomial in $t$)
-is performed using the fourth-order commutator-free Magnus integrator based on
+is performed by using the fourth-order commutator-free Magnus integrator based on
 \cref{eq:compose4}.
 
 \subsubsection{Lie Group Integrator}
@@ -449,10 +449,10 @@ scheme called CF4 is used that is given as
   \end{split}
 \end{equation}
 This method requires four transport solutions and five matrix exponentials per
-timestep. However, because it is fourth-order, it allows large timesteps to be
+timestep. Because it is fourth-order, however, it allows large timesteps to be
 used without sacrificing accuracy. For example, on a test problem based on a
 3$\times$3 fuel pin array with gadolinium as a burnable absorber, the CF4 method
-allowed 20 day timesteps while still achieving an accuracy of of 0.1\% on the
+allowed 20-day timesteps while still achieving an accuracy of 0.1\% on the
 $^{157}$Gd number density~\citep{josey2017phd}.
 
 \subsubsection{Extended Predictor--Corrector Methods}
@@ -466,7 +466,7 @@ following form:
   \begin{split}
     \hat{\vect{n}}_1 &= \vect{n}_i \\
     \hat{\vect{n}}_k &= \exp \left( h \sum_{j=1}^{k-1} a_{ij} \vect{A}(\hat{\vect{n}}_j) \right) \vect{n}_i \\
-    \vect{n}_{i+1} &= \exp \left( h \sum_{j=1}^{s} b_{j} \vect{A}(\hat{\vect{n}}_j) \right) \vect{n}_i
+    \vect{n}_{i+1} &= \exp \left( h \sum_{j=1}^{s} b_{j} \vect{A}(\hat{\vect{n}}_j) \right) \vect{n}_i .
   \end{split}
 \end{equation}
 Noting that the coefficients in \cref{eq:epc} can be arranged in a Butcher
@@ -489,17 +489,17 @@ fourth-order Runge--Kutta method:
 \subsubsection{Stochastic Implicit Euler Integrators}
 
 All of the integration methods discussed thus far are explicit methods that are
-only conditionally stable. There are many well-documented cases where
+only conditionally stable. In many well-documented cases 
 oscillatory behavior and diverging solutions have been observed. To address
-this, \citet{dufek2013ane} proposed an implicit-Euler-like method that is
+this situation, \citet{dufek2013ane} proposed an implicit-Euler-like method that is
 unconditionally stable. The main idea is to replace $\vect{A}(\vect{n}_i)$ with
 $\vect{A}(\vect{n}_{i+1})$ in \cref{eq:predictor}:
 \begin{equation}
   \label{eq:implicit}
   \vect{n}_{i+1} = \exp \left( h\vect{A}(\vect{n}_{i+1}) \right) \vect{n}_i.
 \end{equation}
-This results in a non-linear equation for $\vect{n}_{i+1}$ that cannot be solved
-directly. However, it is possible to solve for $\vect{n}_{i+1}$ using a
+This results in a nonlinear equation for $\vect{n}_{i+1}$ that cannot be solved
+directly. It is possible, however, to solve for $\vect{n}_{i+1}$ by using a
 fixed-point iteration. \citet{dufek2013ane} utilized a stochastic approximation
 based on the Robbins--Monro algorithm~\citep{robbins1951ams} in order to
 guarantee convergence of the fixed-point iteration while accounting for
@@ -520,12 +520,12 @@ better estimates that are then used to solve \cref{eq:linear-ode}.
 OpenMC does not rely on a single time integration method but rather has several
 classes that implement different algorithms. Generally, there is a tradeoff
 between the accuracy of the method, the computational expense, and the memory
-requirements. When a MC code is used, the expense is dominated by the time
-to compute the transport solution, i.e., to evaluate $\vect{A}$ for a given
+requirements. When an MC code is used, the expense is dominated by the time
+to compute the transport solution, in other words, to evaluate $\vect{A}$ for a given
 $\vect{n}$. Thus, the cost of a method scales with the number of $\vect{A}$
 evaluations that are performed per timestep. On the other hand, methods that
 require more evaluations generally achieve higher accuracy. The predictor method
-only requires one evaluation and its error converges as $\mathcal{O}(h)$. The
+requires only one evaluation, and its error converges as $\mathcal{O}(h)$. The
 CE/CM method requires two evaluations and is thus twice as expensive as the
 predictor method, but achieves an error of $\mathcal{O}(h^2)$.
 
@@ -542,7 +542,7 @@ exponential is approximated as
 \begin{equation}
     \exp(\vect{A}t) \approx \alpha_0 \prod\limits_{\ell=1}^{k/2} \left (
     \vect{I} + 2 \text{Re} \left ( \widetilde{\alpha}_\ell \left (\vect{A}t
-    - \theta_\ell \vect{I} \right )^{-1} \right ) \right )
+    - \theta_\ell \vect{I} \right )^{-1} \right ) \right ),
 \end{equation}
 where $k$ is the order of the approximation and $\alpha_0$,
 $\widetilde{\alpha}_\ell$, and $\theta_\ell$ are coefficients that have been
@@ -569,28 +569,28 @@ from scipy.sparse.linalg~\citep{virtanen2020nm} for solving the linear system.
 \subsection{Nuclear Data Considerations}
 
 In principle, using CRAM for evaluating matrix exponentials is fairly simple:
-construct the burnup matrix at various times and solve a set of sparse linear
+Construct the burnup matrix at various times, and solve a set of sparse linear
 systems. However, constructing the burnup matrix, $\vect{A}$, involves not only
-solving the transport equation to estimate nuclear reaction rates but also a
+solving the transport equation to estimate nuclear reaction rates but also making a
 series of choices about what data to include.
 
 \subsubsection{Depletion Chain Generation}
 \label{sec:depletion-chain}
 
-In OpenMC, the burnup matrix is constructed based on data inside of a
+In OpenMC, the burnup matrix is constructed based on data inside a
 \emph{depletion chain} file that includes fundamental data gathered from ENDF
 incident neutron, decay, and fission product yield (FPY) sublibraries. For each
-nuclide, this file includes:
+nuclide, this file includes the following:
 \begin{itemize}
-  \item What transmutation reactions are possible, their Q values, and their products;
+  \item What transmutation reactions are possible, their Q values, and their products
   \item If a nuclide is not stable, what decay modes are possible, their
-  branching ratios, and their products; and
+  branching ratios, and their products  
   \item If a nuclide is fissionable, the fission products yields at any number
-  of incident neutron energies.
+  of incident neutron energies
 \end{itemize}
 
 Depletion chains can be automatically created in the Python application
-programming interface (API) in the following manner. First, the user supplies a
+programming interface in the following manner. First, the user supplies a
 list of ENDF incident neutron, decay, and FPY sublibrary files. The incident
 neutron files are used to determine what nuclear reactions result in
 transmutation and what the corresponding Q values of the reactions are. The
@@ -610,7 +610,7 @@ less than the mass number of the longest-lived isotope, it is assumed that the
 nuclide will undergo a $\upbeta^+$ decay. Conversely, if the mass number is
 larger than the mass number of the longest-lived isotope, it is assumed that the
 nuclide will undergo a $\upbeta^-$ decay. Once the replacement nuclide has been
-determined, OpenMC will check again if it exists in the decay sublibrary files.
+determined, OpenMC will check again whether it exists in the decay sublibrary files.
 If not, the process is repeated.
 
 Some nuclides that have fission reactions in ENDF/B-VII.1, such as $^{243}$Pu,
@@ -622,8 +622,8 @@ of great importance. For the depletion chains used in OpenMC, we have adopted
 the method used in Serpent, which is as follows:
 \begin{enumerate}
   \item If the nuclide missing FPYs is a metastable state, use FPYs from the
-  ground state;
-  \item Use FPYs from an isotone if available;
+  ground state.
+  \item Use FPYs from an isotone if available.
   \item If all else fails, use FPYs from $^{235}$U.
 \end{enumerate}
 
@@ -631,16 +631,16 @@ Using all incident neutron, decay, and FPY sublibrary files from an ENDF-format
 library, such as ENDF/B-VIII.0, results in a \emph{full} depletion chain that
 typically includes thousands of nuclides. Because the use of a chain with $n$
 nuclides will result in an $n\times n$ burnup matrix, there is an incentive to
-reduce the number of nuclides in the depletion chain to minimize both the size
+reduce the number of nuclides in the depletion chain in order to minimize both the size
 of the burnup matrix and the number of nuclides that are tracked during a
 transport solve. The depletion chain class in OpenMC's Python API includes a
 method for automatically reducing the size of the chain. Starting with a set of
 nuclides that must be included, the method will recursively go through all decay
-and reaction modes to determine what products may be produced. This can help
+and reaction modes to determine what products may be produced. This process can help
 minimize both the size of the depletion matrix and the number of nuclides for
 which reaction rates must be tallied, thereby reducing the time spent in the
 depletion and transport solvers. Using this method on the ENDF/B-VII.1 library
-starting from a list of all stable or very long lived (half-life greater than
+starting from a list of all stable or very long-lived (half-life greater than
 $10^{15}$ sec) nuclides reduces the total number of nuclides in the depletion
 chain from 3,820 to 1,693.
 
@@ -665,12 +665,12 @@ specification.
 
 \subsubsection{Transmutation Reactions}
 
-OpenMC will setup tallies in a problem based on what transmutation reactions are
+OpenMC will set up tallies in a problem based on what transmutation reactions are
 available in a depletion chain file, so any arbitrary number of transmutation
 reactions can be tracked. By default, the automatic depletion chain generation
 described in \cref{sec:depletion-chain} will include the following transmutation
 reactions: fission, (n,$\gamma$), (n,2n), (n,3n), (n,4n), (n,p), and
-(n,$\alpha$). While this is suitable for fission applications, fusion
+(n,$\alpha$). While this list is suitable for fission applications, fusion
 applications may require a wider set of transmutation reactions to be tracked.
 Currently, reaction rates are determined by directly tallying the reaction rates
 using a tracklength estimator.
@@ -685,18 +685,18 @@ $^{241}$Am, which can produce either $^{242}$Am or $^{242\text{m}}$Am. Because
 the metastable state has a significantly longer half-life than the ground state,
 it is important to account for the branching of the capture reaction in
 $^{241}$Am to accurately predict the production of higher
-actinides~\citep{haeck2012nse}. This is complicated by the fact that the
+actinides~\citep{haeck2012nse}. Doing so is complicated, however, by the fact that the
 branching ratio may depend on the incident neutron energy causing capture (hence
 why $f_{j\rightarrow i}$ in \cref{eq:depletion} depends on $E$).
 
-OpenMC does not currently implement a method to handle energy-dependent capture
+OpenMC does not currently implement a method for handling energy-dependent capture
 branching ratios directly and treats $f_{j\rightarrow i}$ as a constant.
 However, the depletion chain file does allow a reaction to be listed multiple
 times with different branching ratios that result in different products.
 Spectrum-averaged capture branching ratios have been computed in LWR and SFR
-spectra and are available at \url{https://openmc.org/depletion-chains}. Within
+spectra and are available at \url{https://openmc.org/depletion-chains}. In
 the Python API, the class representing a depletion chain allows branching ratios
-to be easily retrieved and changed. We note that while this treatment doesn't
+to be easily retrieved and changed. We note that while this treatment does not
 accurately account for the change in the capture branching ratio with increasing
 burnup (due to spectral changes), these changes are generally much smaller than
 the differences in capture branching ratios between nuclear data evaluations.
@@ -712,12 +712,12 @@ the observed FPYs for a spectrum of energies (characterized by a single point).
 For example, FPYs are often given at \SI{0.0253}{\electronvolt}, but this
 actually represents the observed FPYs under a thermal neutron spectrum that
 contains a continuum of energies. The ENDF-6 formats manual~\citep{trkov2018bnl}
-recommends using linear-linear interpolation between energy points. However, at
-the end of a transport solve, we typically have a one-group or multigroup
-fission reaction rate---it's not clear how one should use this information to
+recommends using linear-linear interpolation between energy points. At
+the end of a transport solve, however, we typically have a one-group or multigroup
+fission reaction rate---and it is not clear how this information should be used  to
 calculate an effective FPY.
 
-Different codes have adopted different approaches in how to handle the energy
+Different codes have adopted different approaches for handling the energy
 dependence of FPYs. In ORIGEN, the average neutron energy causing fission is
 calculated, and FPYs are interpolated using this average
 energy~\citep{gauld2011nt}. In MCNP, the fission rate is tallied over a few
@@ -748,17 +748,17 @@ the same as that used by ORIGEN~\citep{gauld2011nt}.
 \subsubsection{Power Normalization}
 
 The reaction rates calculated by OpenMC are given in units of reactions per
-source particle. For depletion, it is necessary to compute an absolute reaction
+source particle. For depletion, one must compute an absolute reaction
 rate in reactions per second. To do so, the total observed heating in the system
 is determined, and then the ratio of the system power to the observed heating is
 used as a normalization factor on the reaction rates. OpenMC allows the total
 heating to be determined by two different methods. In the first method, fission
 reaction rates are multiplied by constant Q values in the depletion chain file
 to estimate the total heating. This method is particularly useful for making
-inter-code comparisons, where one must ensure that the same Q values for fission
+intercode comparisons, where one must ensure that the same Q values for fission
 are applied. In the second method, the actual heating rate is tallied over the
-entire system (separate from the tally for transmutation reaction rates). This
-method makes it possible to account for the energy dependence of the fission
+entire system (separate from the tally for transmutation reaction rates). With this
+method one can account for the energy dependence of the fission
 energy release data as well as the fact that neutrons and photons may leak out
 of the system, carrying away their energy with them. The latter effect may be
 particularly important for small, high-leakage systems.
@@ -771,7 +771,7 @@ Generally, to run OpenMC, a user writes a Python script that utilizes classes
 and functions defined as part of an API to generate XML input files that are
 then read by the executable. On top of this, OpenMC is also built as a shared
 library with a C++ API that can be called by external programs. OpenMC's Python
-API includes bindings to the C++ API; this enables a single run to be broken up
+API includes bindings to the C++ API; these enable a single run to be broken up
 into individual components. For example, a function call from the Python
 bindings to the C++ API can initialize the solver (reading inputs, loading cross
 sections, etc.) without actually performing a simulation. A separate function
@@ -783,17 +783,17 @@ OpenMC's depletion capability is implemented entirely in Python as the
 C++ API to initialize OpenMC, create tallies necessary for depletion, run
 transport simulations, and obtain tally results. This approach has two primary
 advantages. First, the time necessary to load cross sections is amortized
-because it only has to be performed once, as opposed to once per transport
+because it has to be performed only once, as opposed to once per transport
 simulation. Second, using the Python bindings to the C++ API allows results to
-be read directly in memory rather than using filesystem I/O, which helps to
-minimizing overhead, particularly for large simulations.
+be read directly in memory rather than using filesystem I/O, thereby helping 
+minimize overhead, particularly for large simulations.
 
 The \texttt{openmc.deplete} module is designed with three key abstract classes
 that represent the major components of the depletion solver. Each of the
-abstract classes themselves defines an interface, that is, a set of methods that
+abstract classes defines an interface, that is, a set of methods that
 a subclass must implement. First, the abstract \texttt{TransportOperator} class
 represents a particle transport solver. Subclasses of \texttt{TransportOperator}
-are required to implement a method that takes a list of nuclide densities to be
+are required in order to implement a method that takes a list of nuclide densities to be
 used in the problem and a system power and returns the $k$-eigenvalue and the
 reaction rates resulting from the transport operator. Currently, there is a
 single subclass of \texttt{TransportOperator} that interfaces with the Python
@@ -805,8 +805,8 @@ data present in the depletion chain.
 The abstract \texttt{DepSystemSolver} class represents a solver for
 \cref{eq:depletion-matrix} when $\vect{A}$ is constant (a solver that can
 evaluate \cref{eq:constant-A}). Subclasses of \texttt{DepSystemSolver} are
-required to implement a method that takes the burnup matrix $\vect{A}$, an
-initial density vector $\vect{n}_0$, and a timestep size, and returns the
+required in order to implement a method that takes the burnup matrix $\vect{A}$, an
+initial density vector $\vect{n}_0$ and a timestep size and returns the
 resulting nuclide densities at the end of the step. The only subclass of
 \texttt{DepSystemSolver} at present is \texttt{IPFCramSolver}, which implements
 the IPF form of CRAM to evaluate \cref{eq:constant-A}. Because the CRAM method
@@ -816,11 +816,11 @@ a sparse linear solve.
 
 The abstract \texttt{Integrator} class represents a time integration method.
 This class effectively orchestrates the coupled transport--depletion simulation.
-Subclasses of \texttt{Integrator} are required to implement a method that takes
+Subclasses of \texttt{Integrator} are required in order to implement a method that takes
 an initial vector of nuclide densities, reaction rates returned from an
-operator, a time interval, and a power, and returns the resulting nuclide
+operator, a time interval, and a power and returns the resulting nuclide
 densities at the end of the step. Thus, \texttt{Integrator} utilizes
-\texttt{TransportOperator} in order to obtain reaction rates given $\vect{n}$,
+\texttt{TransportOperator} in order to obtain reaction rates given $\vect{n}$;
 and once the burnup matrix is constructed, it utilizes \texttt{DepSystemSolver}
 to deplete with a constant $\vect{A}$ as many times as is necessary. One example
 of a subclass of \texttt{Integrator} is \texttt{CECMIntegrator}, which
@@ -836,12 +836,12 @@ that be another Monte Carlo code or a deterministic code). Similarly, although
 could replace it with a different solver, for example, a solver based on
 backward differentiation formulas.
 
-Lastly, we note that when multiple depletable materials are present in a problem
+We note that when multiple depletable materials are present in a problem
 (thereby requiring multiple independent solutions of
 \cref{eq:depletion-matrix}), the work is fully parallelized over the available
 processes/threads. The third-party \texttt{mpi4py} Python package is used to
 distribute the material compositions among the participating MPI processes.
-Then, within each process, Python's \texttt{multiprocessing} standard-library
+Then, within each process, Python's \texttt{multiprocessing} standard library
 module is used to distribute materials among threads within a single MPI
 process. This matches the distributed- and shared-memory parallelization scheme
 used in OpenMC's transport solver, which relies on MPI and OpenMP.
@@ -852,14 +852,14 @@ used in OpenMC's transport solver, which relies on MPI and OpenMP.
 
 To validate the depletion solver in OpenMC, we have carried out simulations
 using the \texttt{openmc.deplete} module as well as a developmental version of
-Serpent 2.1.32 on two simple problems. The first problem is a pressurized water
-reactor (PWR) pincell and the second problem is a single assembly of a
-sodium-cooled fast reactor (SFR). These problems were selected to cover both
+Serpent 2.1.32 on two simple problems. The first problem is a 
+PWR pincell, and the second problem is a single assembly of an
+SFR. These problems were selected to cover both
 thermal and fast neutron spectra. While we had originally attempted to use
 Serpent 2.1.31, preliminary comparisons between OpenMC and this version of
 Serpent revealed significant differences in the predicted concentration of
 $^{97}$Mo. This difference was found to be due to $^{97\text{m}}$Y having a
-non-zero independent yield and a zero cumulative yield in the FPY sublibrary
+nonzero independent yield and a zero cumulative yield in the FPY sublibrary
 file for $^{235}$U fission in ENDF/B-VII.1. The zero cumulative yield caused
 Serpent 2.1.31 to ignore it altogether, which resulted in significantly less
 production of $^{97}$Mo. The developmental version of Serpent 2.1.32 no longer
@@ -871,26 +871,26 @@ First, the presence of experimental uncertainties makes it hard to ascertain
 whether small differences are attributable to the uncertainties or errors in the
 code itself. In a cross-code comparison, if the same solution method and
 fundamental nuclear data are being used in both codes, one expects to obtain the
-same answer. Thus, even very minute differences may be indicative of a true
+same answer. Thus, even minute differences may be indicative of a true
 problem in the method implementation in one of the codes.
 
 \subsection{Data Preparation}
 
-Given the remarks above, it is of utmost importance to ensure that the same
+Given the remarks above, one must take utmost care to ensure that the same
 nuclear data are being used in a cross-code comparison. For a depletion
 simulation, we must ensure that the incident neutron cross sections and
 secondary angle/energy distributions, radioactive decay data, and FPYs are the
-same for both codes. In the simulations performed, all data was based on the
+same for both codes. In the simulations performed, all data were based on the
 ENDF/B-VII.1 nuclear data library~\citep{chadwick2011nds}. Incident neutron
 cross sections from the ENDF/B-VII.1 library processed by the LANL nuclear data
 team~\citep{conlin2013lanl}, known as endf71x, were used for transport
 simulations in both OpenMC and Serpent. Serpent is able to use the ACE files
-from the endf71x library directly while OpenMC uses an HDF5 format that requires
+from the endf71x library directly, whereas OpenMC uses an HDF5 format that requires
 conversion of the ACE files first. For the PWR pincell problem,
-$S(\alpha,\beta)$ thermal scattering data is also needed for hydrogen in light
+$S(\alpha,\beta)$ thermal scattering data are also needed for hydrogen in light
 water; because Serpent does not yet handle the continuous representation used in
-the ENDF71SaB library, the light water data from ENDF/B-VII.0 was used instead.
-We note that the light water evaluation didn't actually change between
+the ENDF71SaB library, the light water data from ENDF/B-VII.0 were used instead.
+We note that the light water evaluation did not actually change between
 ENDF/B-VII.0 and ENDF/B-VII.1.
 
 In Serpent, the depletion solver relies directly on ENDF decay and FPY
@@ -925,9 +925,9 @@ boundary conditions in the $x$ and $y$ directions. A linear heating rate of
 \SI{174}{\watt\per\centi\meter} was used for power normalization. The pin was
 depleted to 50 MWd/kg using the following burnup schedule:
 \begin{itemize}
-  \item A single 0.1 MWd/kg, 0.4 MWd/kg, and 0.5 MWd/kg timesteps;
-  \item 1.0 MWd/kg timesteps out to a cumulative burnup of 10.0 MWd/kg;
-  \item 2.5 MWd/kg timesteps out to a cumulative burnup of 50.0 MWd/kg.
+  \item A single 0.1 MWd/kg, 0.4 MWd/kg, and 0.5 MWd/kg timesteps
+  \item 1.0 MWd/kg timesteps out to a cumulative burnup of 10.0 MWd/kg
+  \item 2.5 MWd/kg timesteps out to a cumulative burnup of 50.0 MWd/kg
 \end{itemize}
 The short timesteps at the beginning are used to accurately capture the buildup
 of xenon isotopes. In both codes, the predictor method was used for time
@@ -936,7 +936,7 @@ method, the purpose of the comparison is to confirm that OpenMC and Serpent
 produce comparable results irrespective of the absolute values.
 
 Five coupled transport--depletion simulations were carried out with OpenMC to test
-a variety of combinations of depletion chains and methods for handling FPY
+various combinations of depletion chains and methods for handling FPY
 energy dependence:
 \begin{enumerate}
   \item Full depletion chain, thermal FPYs
@@ -946,7 +946,7 @@ energy dependence:
   %\item CASL depletion chain, FPYs based on cutoff method
   \item CASL depletion chain, interpolated FPYs
 \end{enumerate}
-Because Serpent doesn't have an option for changing the depletion chain or the
+Because Serpent does not have an option for changing the depletion chain or the
 method for handling FPY energy dependence, a single coupled transport--depletion
 simulation with Serpent was carried out. For all simulations, 20 inactive
 batches, 200 active batches, and \num{4.0e6} particles per batch were used,
@@ -961,11 +961,11 @@ chain, the use of interpolated FPYs is denoted by circles and thermal FPYs by
 x's. At zero days, the difference in $k_\text{eff}$ between OpenMC and Serpent
 is not statistically significant. As the burnup increases, the difference for
 the full chain cases rises to about 20 pcm. The reduced chain case exhibits the
-exact same behavior as the full chain as one would expect. Use of the CASL chain
+exact same behavior as the full chain does, as one would expect. Use of the CASL chain
 results in a slightly larger difference between OpenMC and Serpent at 50 MWd/kg,
 about 40 pcm. We also see that for both the full and CASL chains, changing the
-method for handling FPY energy dependence doesn't appear to have much of an
-effect on $k_\text{eff}$, which is primarily driven by the prediction of
+method for handling FPY energy dependence does not appear to have much
+effect on $k_\text{eff}$, which is driven primarily by the prediction of
 actinide concentrations.
 \begin{figure}[H]
   \centering
@@ -977,8 +977,8 @@ actinide concentrations.
 \end{figure}
 
 \Cref{fig:pwr-actinides-full} shows the relative difference in predicted
-actinide concentrations between OpenMC and Serpent at four different burnup
-values. The fission products that are shown in \cref{fig:pwr-actinides-full}
+actinide concentrations between OpenMC and Serpent at four burnup
+values. The fission products shown in \cref{fig:pwr-actinides-full}
 have been chosen because they are either strong neutron absorbers or significant
 contributors to decay heat and/or radiotoxicity. We see that most of the
 differences are less than 0.1\%, and all are within 0.15\%. The differences in
@@ -1012,7 +1012,7 @@ with respect to how fission products are treated, the differences reported in
 The predicted concentration of fission products depends on both the depletion
 chain that is used and the method for handling the energy dependence of the FPY.
 We begin with results for the full depletion chain and interpolated FPYs, which
-most closely matches the method used in Serpent; \cref{fig:pwr-fp-full-average}
+most closely match the method used in Serpent; \cref{fig:pwr-fp-full-average}
 shows the relative difference in fission product concentrations between OpenMC
 and Serpent for this case. Most of the differences are less than 0.2\%, and only
 a few fission products show differences up to 0.5\%.
@@ -1033,11 +1033,11 @@ average fission energy to interpolate between two sets of FPYs, the systematic
 difference is expected when using thermal FPYs in OpenMC. As the incident energy
 of a neutron causing fission increases, the ``saddle'' and ``wings'' in the FPY
 curve tend to increase significantly, and the peaks around $A=95$ and $A=135$
-tend to slightly decrease. This corresponds to exactly what is observed in
+tend to slightly decrease. These results correspond to exactly what is observed in
 \cref{fig:pwr-fp-full-thermal}. Because thermal FPYs were used in OpenMC for
 this case, we expect that fission products near one of the two peaks of the FPY
-curve will be slightly overpredicted relative to Serpent, and fission products
-away from the peak will be underpredicted. This can be confirmed for particular
+curve will be slightly overpredicted relative to Serpent and that fission products
+away from the peak will be underpredicted. These results can be confirmed for particular
 nuclides. Take, for example, $^{109}$Ag; in the $A=109$ mass chain, the nuclides
 with the highest independent yields are $^{109}$Tc and $^{109}$Mo. Both these
 nuclides have independent yields that increase significantly with increasing
@@ -1072,9 +1072,9 @@ nuclides are shown in \cref{tab:fp-yields}.
 fission product concentrations between OpenMC and Serpent when using the CASL
 depletion chain and interpolated FPYs. As in \cref{fig:pwr-fp-full-average},
 almost all fission products are predicted to well within 1\% at 50 MWd/kg.
-However, in this case there is one clear outlier: $^{85}$Kr. Upon further
-investigation, it was determined that the root cause for this difference is the
-fact that the CASL depletion chain uses a cumulative yield for $^{85}$Kr, and
+In this case, however, we find one clear outlier: $^{85}$Kr. Upon further
+investigation, we determined that the root cause for this difference is 
+that the CASL depletion chain uses a cumulative yield for $^{85}$Kr, and
 the cumulative yield of $^{85}$Kr is known to be inconsistent with the
 independent yields of the $A=85$ mass chain in
 ENDF/B-VII.1~\citep{pigni2015nds}. Serpent relies solely on independent yields
@@ -1095,7 +1095,7 @@ higher difference in $k_\text{eff}$ for the CASL depletion chain shown in
 
 \Cref{fig:pwr-fp-casl-thermal} shows the relative difference in predicted in
 fission product concentrations when using the CASL depletion chain along with
-thermal FPYs. The results are quite close to those shown
+thermal FPYs. The results are close to those shown
 \cref{fig:pwr-fp-full-thermal}, with the exception of $^{85}$Kr for the
 aforementioned reasons.
 \begin{figure}[H]
@@ -1110,23 +1110,23 @@ aforementioned reasons.
 \subsection{SFR Assembly}
 
 The SFR assembly model is based on an OECD/NEA benchmark for SFR
-analysis~\citep{nsc2015}. Namely, a 2D model of a driver assembly for the 1000
+analysis~\citep{nsc2015}. Specifically, a 2D model of a driver assembly for the 1000
 MWth metallic core (MET-1000) was used. The fuel composition corresponded to the
-lowest axial region (the 17.16 cm column in Table 2.23 from ~\citep{nsc2015}).
+lowest axial region (the 17.16 cm column in Table 2.23 from~\citep{nsc2015}).
 All dimensions and material compositions can be found in the original OECD/NEA
 report. The assembly model extends to positive/negative infinity in the $z$
 direction and has periodic boundary conditions on the outer hexagonal surfaces.
 A linear heating rate of \SI{23.3}{\kilo\watt\per\meter} per
 pin~\citep{cahalan2007anl} was used for power normalization. The assembly was
-depleted for 360 days in 20 day timesteps. As in the PWR pincell case, the
+depleted for 360 days in 20-day timesteps. As in the PWR pincell case, the
 predictor method was used in both codes for time integration.
 
-Unlike the PWR pincell model, which only contains materials at a single
+Unlike the PWR pincell model, which contains materials only at a single
 temperature, the SFR assembly model uses a higher temperature in the fuel than
-in other materials. In OpenMC, the temperature-dependence of neutron cross
+in other materials. In OpenMC, the temperature dependence of neutron cross
 sections was handled by interpolating data between neighboring temperatures.
 Serpent uses an explicit temperature treatment known as target motion
-sampling~\citep{viitanen2012nse}. However, we note that for this problem, the
+sampling~\citep{viitanen2012nse}. We note, however, that for this problem the
 temperature dependence of unresolved resonance probability tables becomes
 important because of the fast flux spectrum, but the temperature treatment in
 Serpent 2.1.31 does not handle probability tables.
@@ -1142,7 +1142,7 @@ the SFR assembly model:
 The results for the PWR pincell model indicated that the reduced depletion chain
 results in identical behavior to the full depletion chain, so we have not
 included a case for the SFR assembly using the reduced depletion chain. Two
-coupled transport--depletion simulation with Serpent was carried out, one with
+coupled transport--depletion simulation with Serpent was carried out: one with
 probability tables turned on and one with them turned off. For all simulations,
 20 inactive batches, 200 active batches, and \num{4.0e6} particles per batch
 were used, which resulted in an uncertainty on the effective multiplication
@@ -1156,8 +1156,8 @@ factor of 3--4 pcm.
 OpenMC and Serpent as the assembly is depleted. The blue points correspond to
 results using the full depletion chain, and the orange points correspond to
 results using the CASL chain. For each chain, simulations with probability
-tables on are denoted by circles and simulations without probability tables are
-denoted by squares. Unlike in the PWR pincell case, there is a statistically
+tables on are denoted by circles, and simulations without probability tables are
+denoted by squares. Unlike in the PWR pincell case, we see a statistically
 significant difference in $k_\text{eff}$ at zero days. Let us first consider the
 case with probability tables turned off. In this case, $k_\text{eff}$ calculated
 by OpenMC is about 20 pcm higher than that of Serpent. When using the full
@@ -1168,7 +1168,7 @@ increases by about 20--30 pcm, similar to the behavior shown in
 is quite different. At zero days, $k_\text{eff}$ calculated by OpenMC is 20 pcm
 lower than the value calculated by Serpent. As the burnup increases, there is an
 increasing positive bias between OpenMC and Serpent. To understand the cause of
-this difference, it is instructive to look at differences in isotopic
+this difference, let us look at differences in isotopic
 compositions.
 \begin{figure}[H]
   \centering
@@ -1211,7 +1211,7 @@ between the probability tables at \SI{600}{\kelvin} and \SI{900}{\kelvin}.
   \label{fig:sfr-actinides}
 \end{figure}
 
-When probability tables are turned off, very close agreement is observed between
+When probability tables are turned off, close agreement is observed between
 the predicted actinide concentrations in OpenMC and Serpent, as shown in
 \cref{fig:sfr-actinides-nop}. In this case, the actinide concentrations agree to
 within 0.01\% at all times during depletion for both the full and CASL depletion
@@ -1238,7 +1238,7 @@ chains.
 \Cref{fig:sfr-fp} shows the relative difference in fission product
 concentrations between OpenMC and Serpent with probability tables turned on.
 Most differences between OpenMC and Serpent are below 1\%. As with the PWR
-pincell model, OpenMC tends to produce a lower concentration of $^{109}$Ag most
+pincell model, OpenMC tends to produce a lower concentration of $^{109}$Ag, most
 likely because of differences in the treatment of FPY energy dependence. The
 only noticeable difference between the full and CASL depletion chains is for
 $^{85}$Kr, which is again explained by the use of an inconsistent cumulative
@@ -1299,29 +1299,29 @@ components, including the time integration methods, the matrix exponential
 solver, and the transport operator. In principle, this modularity would allow
 the depletion system to be used with another transport code. Rather than relying
 on a single time integration method, OpenMC implements several time integration
-schemes including the predictor method, standard predictor--corrector methods,
-stochastic implicit Euler integrators, and several novel
+schemes, including the predictor method, standard predictor--corrector methods,
+and stochastic implicit Euler integrators.
 methods~\citep{josey2017phd, josey2017jcp}. To evaluate the matrix exponential,
 OpenMC relies on the incomplete partial fraction form of CRAM by default.
 
-To assess the accuracy of the new depletion solver, comparisons were made
-between OpenMC and Serpent on a PWR pincell model and an SFR assembly model.
+To assess the accuracy of the new depletion solver, we compared 
+OpenMC and Serpent on a PWR pincell model and an SFR assembly model.
 When the full depletion chain was used in OpenMC, the predictions of
 $k_\text{eff}$ agreed to within 20--30 pcm of that calculated by Serpent at all
-times in life for both the PWR and SFR model. Actinide concentrations were found
+times for both the PWR and SFR models. Actinide concentrations were found
 to agree to a fraction of a percent, and most fission product concentrations
 were found to agree within 1\%. The few cases where fission product
 concentrations differed by a larger amount were found to be related to
 differences in the treatment of the energy dependence of FPYs. It is our sense
 that there is no consensus in the community as to what is the ``correct'' way of
-handling this energy dependence, so it is not possible to opine on whether one
+handling this energy dependence, so it is not possible to opine about whether one
 set of results is right or wrong. When the simplified CASL depletion chain was
 used in OpenMC, the accuracy of actinide and fission product concentrations did
 not change appreciably. The only nuclide for which a significant difference was
 observed was $^{85}$Kr; this difference can be explained by a cumulative yield
 in the ENDF/B-VII.1 FPY sublibrary that is inconsistent with the independent
 yields of precursors~\citep{pigni2015nds}. Because the CASL depletion chain
-results in a significantly lower runtime compared to the full depletion chain
+results in a significantly lower runtime compared with the full depletion chain
 while still retaining accuracy, it is recommended for general use by OpenMC
 users.
 
@@ -1337,22 +1337,22 @@ model, this results in lower parasitic neutron absorption in $^{238}$U, lower
 production of $^{239}$Pu, and ultimately a lower $k_\text{eff}$. After depleting
 for 360 days, there was a 100 pcm difference between OpenMC and Serpent due to
 this effect. Although this is not a huge difference, users who are simulating
-problems with a non-uniform temperature distribution should be aware of this
+problems with a nonuniform temperature distribution should be aware of this
 behavior. This difference could be mitigated by using nuclear data processed on
 a finer temperature grid---in our results, cross sections and probability table
 data were being interpolated over a rather large \SI{300}{\kelvin} interval.
 
-Finally, we remark that although we did observe some differences between OpenMC
+Although we did observe some differences between OpenMC
 and Serpent, most of the differences were related to deficiencies in the nuclear
-data itself. As a whole, the results demonstrate that when the same nuclear data
-and same methods are used in two independently developed codes, it is possible
-to obtain results in a depletion simulation that match within 10s of pcm on
+data. As a whole, the results demonstrate that when the same nuclear data
+and same methods are used in two independently developed codes, one can 
+obtain results in a depletion simulation that match within 10s of pcm on
 $k_\text{eff}$ and less than 1\% on isotopic concentrations.
 
-In the present work, we have only performed a cross-code comparison between
-OpenMC and Serpent. While the results are certainly encouraging, we would
+In the present work, we have performed a cross-code comparison between
+OpenMC and Serpent. While the results are certainly encouraging, we 
 caution readers that no comparisons against experimental results have been
-performed to date and would be needed to ensure the fitness for a particular
+performed to date and would be needed in order to ensure the fitness for a particular
 application. We also highlight the fact that the present comparisons are focused
 solely on fission reactor applications. Although the \texttt{openmc.deplete}
 module may eventually be of interest to other application areas, further changes
@@ -1373,18 +1373,16 @@ show promise but have yet to be incorporated in a release of OpenMC.
 \section*{Acknowledgments}
 
 We gratefully acknowledge the OpenMC user community for providing early feedback
-and bug reports related to depletion that have helped improve the code. We wish
-to acknowledge Jaakko Lepp{\"{a}}nen (VTT) for providing the developmental
-version of Serpent 2.1.32 used in this work and for helping to shed light on the
+and bug reports related to depletion that have helped improve the code. We 
+acknowledge Jaakko Lepp{\"{a}}nen (VTT) for providing the developmental
+version of Serpent 2.1.32 used in this work and for helping shed light on the
 methods used in Serpent. We acknowledge Nicolas Stauff (ANL) for providing
 recommendations on a suitable SFR target problem.
 
 This research was supported by the Exascale Computing Project (17-SC-20-SC), a
 collaborative effort of the U.S. Department of Energy Office of Science and the
-National Nuclear Security Administration. The submitted manuscript has been
-created by UChicago Argonne, LLC, operator of Argonne National Laboratory under
-contract DE-AC02-06CH11357.
-
+National Nuclear Security Administration. The submitted manuscript
+was also suported in part by the U.S. Department of Energy, Office of Science, under contrct DE-AC02-06CH11357.
 We gratefully acknowledge the computing resources provided on Bebop, a
 high-performance computing cluster operated by the Laboratory Computing Resource
 Center at Argonne National Laboratory. This research made use of the resources
