@@ -124,7 +124,8 @@ required no source code changes. In the past decade, many MC code developers
 have chosen to directly include a depletion solver as a first-rate feature,
 including MCNPX~\citep{waters2007aip} (which has since been merged into
 MCNP6~\citep{goorley2012nt}), Serpent~\citep{leppanen2015ane},
-MC21~\citep{griesheimer2015ane}, and RMC~\citep{wang2015ane}.
+MC21~\citep{griesheimer2015ane}, RMC~\citep{wang2015ane}, and
+Shift~\citep{davidson2016ane}.
 
 In the present work, we describe a new depletion solver in OpenMC, an open
 source, community-developed MC particle transport code~\citep{romano2015ane1}.
@@ -156,10 +157,10 @@ radioactive decay inside an irradiated environment can be written as
 \begin{equation}
   \label{eq:depletion}
   \begin{split}
-  \frac{dN_i(t)}{dt} = &\sum\limits_j \left [ \int_0^\infty dE \;
+  \frac{dN_i(t)}{dt} = &\sum\limits_{j=1}^n \left [ \int_0^\infty dE \;
   f_{j \rightarrow i}(E) \sigma_j (E, t) \phi(E,t) + \lambda_{j\rightarrow i}
   \right ] N_j(t) \\ &- \left [\int_0^\infty dE \; \sigma_i (E,t) \phi(E,t) +
-  \sum\limits_j \lambda_{i\rightarrow j} \right ] N_i(t), \quad i=1,\dots,n ,
+  \sum\limits_{j=1}^n \lambda_{i\rightarrow j} \right ] N_i(t), \quad i=1,\dots,n ,
   \end{split}
 \end{equation}
 where
@@ -173,7 +174,9 @@ where
   n &\equiv \text{total number of nuclides.}
   \end{split}
 \end{equation*}
-Note that we have not included the spatial dependence of the flux or cross
+By definition, $f_{i\rightarrow i}$ and $\lambda_{i\rightarrow i}$ are zero so
+the summations in \cref{eq:depletion} are effectively over all nuclides except
+$i$. Note that we have not included the spatial dependence of the flux or cross
 sections. For \cref{eq:depletion} to be accurate, the spatial variation of the
 reaction rates over the region that is being depleted should be small. For a
 reactor model, this may entail using a unique material in each fuel pin that is
@@ -268,15 +271,16 @@ outline these methods in OpenMC, several of which have not been fully described
 in the literature. An exhaustive analysis of these time integration methods and
 their merits can be found in the thesis of \citet{josey2017phd}.
 
-\subsubsection{Predictor Method}
+\subsubsection{Constant Extrapolation Method}
 
 The simplest numerical method for solving \cref{eq:depletion-matrix} over a
-timestep is known as the \emph{predictor} method. It assumes that
-$\vect{A}$ is constant over the timestep and assumes the value at the
-beginning of the step. The solution then follows directly from
-\cref{eq:constant-A}:
+timestep is known as the \emph{constant extrapolation} (CE) method\footnote{In
+the literature, this algorithm is also sometimes called the fully-explicit
+method or the predictor method.}. It assumes that $\vect{A}$ is constant over
+the timestep and assumes the value at the beginning of the step. The solution
+then follows directly from \cref{eq:constant-A}:
 \begin{equation}
-  \label{eq:predictor}
+  \label{eq:constant_extrapolation}
   \vect{n}_{i+1} = \exp\left(h\vect{A}(\vect{n}_i) \right) \vect{n}_i.
 \end{equation}
 The end-of-step composition is thus ``predicted'' by the reaction rates at the
@@ -287,11 +291,11 @@ first-order accurate.
 \subsubsection{Predictor--Corrector Methods}
 
 A series of \emph{predictor--corrector} methods that use multiple stages offer
-improved accuracy over the predictor method. The simplest of these methods is
-the CE/CM (constant extrapolation, constant midpoint) algorithm, which is the
-default algorithm used in MCNP6~\citep{fensin2006tans}. In this method,
-$\vect{A}$ is evaluated at the beginning of the step and used to deplete the
-composition over half the step. Then, $\vect{A}$ is reevaluated by using the
+improved accuracy over the CE method. The simplest of these
+methods is the CE/CM (constant extrapolation, constant midpoint) algorithm,
+which is the default algorithm used in MCNP6~\citep{fensin2006tans}. In this
+method, $\vect{A}$ is evaluated at the beginning of the step and used to deplete
+the composition over half the step. Then, $\vect{A}$ is reevaluated by using the
 predicted middle-of-step composition and is used to deplete over the full step.
 The algorithm can be expressed as
 \begin{equation}
@@ -301,7 +305,7 @@ The algorithm can be expressed as
   \end{split}
 \end{equation}
 This method requires two transport solutions and two matrix exponential solves
-per timestep (twice as expensive as the predictor method) and is second-order
+per timestep (twice as expensive as the CE method) and is second-order
 accurate.
 
 More sophisticated predictor--corrector methods have been introduced by
@@ -493,7 +497,7 @@ only conditionally stable. In many well-documented cases oscillatory behavior
 and diverging solutions have been observed. To address this situation,
 \citet{dufek2013ane} proposed an implicit-Euler-like method that is
 unconditionally stable. The main idea is to replace $\vect{A}(\vect{n}_i)$ with
-$\vect{A}(\vect{n}_{i+1})$ in \cref{eq:predictor}:
+$\vect{A}(\vect{n}_{i+1})$ in \cref{eq:constant_extrapolation}:
 \begin{equation}
   \label{eq:implicit}
   \vect{n}_{i+1} = \exp \left( h\vect{A}(\vect{n}_{i+1}) \right) \vect{n}_i.
@@ -506,8 +510,8 @@ guarantee convergence of the fixed-point iteration while accounting for
 stochasticity in the MC transport solver.
 
 The major downside of an algorithm based on \cref{eq:implicit} is that, like the
-predictor method, it is only first-order accurate. Implicit methods have also
-been applied to higher-order
+CE method, it is only first-order accurate. Implicit methods have also been
+applied to higher-order
 algorithms~\citep{kotlyar2014ane,kotlyar2016ane,cosgrove2020ane}, thereby
 obtaining methods that are unconditionally stable and accurate with longer
 timesteps. In OpenMC, stochastic implicit versions of the CE/LI and LE/QI
@@ -524,10 +528,10 @@ requirements. When an MC code is used, the expense is dominated by the time to
 compute the transport solution, in other words, to evaluate $\vect{A}$ for a
 given $\vect{n}$. Thus, the cost of a method scales with the number of
 $\vect{A}$ evaluations that are performed per timestep. On the other hand,
-methods that require more evaluations generally achieve higher accuracy. The
-predictor method requires only one evaluation, and its error converges as
+methods that require more evaluations generally achieve higher accuracy. The CE
+method requires only one evaluation, and its error converges as
 $\mathcal{O}(h)$. The CE/CM method requires two evaluations and is thus twice as
-expensive as the predictor method, but achieves an error of $\mathcal{O}(h^2)$.
+expensive as the CE method, but achieves an error of $\mathcal{O}(h^2)$.
 
 \subsection{Matrix Exponential}
 
@@ -931,8 +935,8 @@ depleted to 50 MWd/kg using the following burnup schedule:
   \item 2.5 MWd/kg timesteps out to a cumulative burnup of 50.0 MWd/kg
 \end{itemize}
 The short timesteps at the beginning are used to accurately capture the buildup
-of xenon isotopes. In both codes, the predictor method was used for time
-integration. While the predictor method is the least accurate time integration
+of xenon isotopes. In both codes, the CE method was used for time
+integration. While the CE method is the least accurate time integration
 method, the purpose of the comparison is to confirm that OpenMC and Serpent
 produce comparable results irrespective of the absolute values.
 
@@ -978,10 +982,8 @@ actinide concentrations.
 \end{figure}
 
 \Cref{fig:pwr-actinides-full} shows the relative difference in predicted
-actinide concentrations between OpenMC and Serpent at four burnup values. The
-fission products shown in \cref{fig:pwr-actinides-full} have been chosen because
-they are either strong neutron absorbers or significant contributors to decay
-heat and/or radiotoxicity. We see that most of the differences are less than
+actinide concentrations between OpenMC and Serpent at four burnup values using
+the full depletion chain. We see that most of the differences are less than
 0.1\%, and all are within 0.15\%. The differences in $^{235}$U and $^{239}$Pu
 concentrations increase slightly with increasing burnup, which most likely
 accounts for the 20 pcm difference observed for the full chain in
@@ -1015,8 +1017,11 @@ chain that is used and the method for handling the energy dependence of the FPY.
 We begin with results for the full depletion chain and interpolated FPYs, which
 most closely match the method used in Serpent; \cref{fig:pwr-fp-full-average}
 shows the relative difference in fission product concentrations between OpenMC
-and Serpent for this case. Most of the differences are less than 0.2\%, and only
-a few fission products show differences up to 0.5\%.
+and Serpent for this case. The fission products shown in
+\cref{fig:pwr-fp-full-average} have been chosen because they are either strong
+neutron absorbers or significant contributors to decay heat and/or
+radiotoxicity. Most of the differences are less than 0.2\%, and only a few
+fission products show differences up to 0.5\%.
 \begin{figure}[H]
   \centering
   \includegraphics[width=4in]{figures/pwr_fp_full_average.pdf}
@@ -1118,8 +1123,8 @@ the original OECD/NEA report. The assembly model extends to positive/negative
 infinity in the $z$ direction and has periodic boundary conditions on the outer
 hexagonal surfaces. A linear heating rate of \SI{23.3}{\kilo\watt\per\meter} per
 pin~\citep{cahalan2007anl} was used for power normalization. The assembly was
-depleted for 360 days in 20-day timesteps. As in the PWR pincell case, the
-predictor method was used in both codes for time integration.
+depleted for 360 days in 20-day timesteps. As in the PWR pincell case, the CE
+method was used in both codes for time integration.
 
 Unlike the PWR pincell model, which contains materials only at a single
 temperature, the SFR assembly model uses a higher temperature in the fuel than
@@ -1294,9 +1299,10 @@ components, including the time integration methods, the matrix exponential
 solver, and the transport operator. In principle, this modularity would allow
 the depletion system to be used with another transport code. Rather than relying
 on a single time integration method, OpenMC implements several time integration
-schemes, including the predictor method, standard predictor--corrector methods,
-and stochastic implicit Euler integrators. To evaluate the matrix exponential,
-OpenMC relies on the incomplete partial fraction form of CRAM by default.
+schemes, including the constant extrapolation method, standard
+predictor--corrector methods, and stochastic implicit Euler integrators. To
+evaluate the matrix exponential, OpenMC relies on the incomplete partial
+fraction form of CRAM by default.
 
 To assess the accuracy of the new depletion solver, we compared OpenMC and
 Serpent on a PWR pincell model and an SFR assembly model. When the full
