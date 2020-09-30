@@ -82,7 +82,7 @@
   is handled or deficiencies in the nuclear data used. OpenMC simulations of the
   PWR and SFR problems using a simplified 228-nuclide depletion chain
   demonstrate that it achieves accuracy close to that of the full, high-fidelity
-  depletion chain.
+  depletion chain with respect to the studied responses.
 \end{abstract}
 
 \begin{keyword}
@@ -144,9 +144,9 @@ The paper is organized as follows. In \cref{sec:methods}, we describe the
 methods and algorithms used to solve the depletion equations, the implementation
 within OpenMC, and how nuclear data is used to create depletion chains. Then, in
 \cref{sec:results}, we present results for two problems that demonstrate the
-accuracy of OpenMC when compared with Serpent~\citep{leppanen2015ane}. In
-\cref{sec:conclusions}, we summarize the findings, discuss limitations, and
-provide commentary on future avenues of inquiry that may be promising.
+accuracy of OpenMC when compared with Serpent. In \cref{sec:conclusions}, we
+summarize the findings, discuss limitations, and provide commentary on future
+avenues of inquiry that may be promising.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Methodology}
@@ -176,7 +176,9 @@ where
 \end{equation*}
 By definition, $f_{i\rightarrow i}$ and $\lambda_{i\rightarrow i}$ are zero so
 the summations in \cref{eq:depletion} are effectively over all nuclides except
-$i$. Note that we have not included the spatial dependence of the flux or cross
+$i$. Also note that the transmutation cross section $\sigma_i$ represents the
+sum of the cross sections for all reaction channels that result in
+transmutation. We have not included the spatial dependence of the flux or cross
 sections. For \cref{eq:depletion} to be accurate, the spatial variation of the
 reaction rates over the region that is being depleted should be small. For a
 reactor model, this may entail using a unique material in each fuel pin that is
@@ -743,7 +745,7 @@ fissions below the cutoff energy, and fast FPYs are used for all fissions above
 the cutoff energy. In the third method, the average energy at which fission
 events occur is tallied,
 \begin{equation}
-  \bar{E} = \frac{\int_0^\infty dE \; E \sigma_f(E)\phi(E)}{\int_0^\infty \sigma_f(E) \phi(E)},
+  \bar{E} = \frac{\int_0^\infty dE \; E \sigma_f(E)\phi(E)}{\int_0^\infty dE \; \sigma_f(E) \phi(E)},
 \end{equation}
 where $\sigma_f$ is the microscopic fission cross section and $\phi$ is the
 neutron flux. An effective FPY is then calculated by linearly interpolating
@@ -869,6 +871,16 @@ cumulative yield caused Serpent 2.1.31 to ignore it altogether, which resulted
 in significantly less production of $^{97}$Mo. The developmental version of
 Serpent 2.1.32 no longer ignores this particular fission product despite the
 erroneous cumulative yield.
+
+Although both OpenMC and Serpent use CRAM for matrix exponential solutions, they
+employ different forms of CRAM. OpenMC relies on the IPF form of CRAM whereas
+Serpent relies on the partial fraction decomposition (PFD)
+form~\citep{pusa2016nse}. Although the IPF form has been shown to be superior
+for long timesteps in decay calculations, both the PFD and IPF form are very
+accurate for burnup calculations, and we do not expect differences between the
+OpenMC and Serpent results to be attributable to the form of CRAM used. At the
+time of writing, OpenMC uses IPF CRAM of order 48 by default and Serpent uses
+PFD CRAM of order 14.
 
 While comparison of simulation predictions to an experiment is a better means of
 ensuring fitness for a particular application, it is not without downsides.
@@ -1182,7 +1194,7 @@ this difference, let us look at differences in isotopic compositions.
 \Cref{fig:sfr-actinides} shows the relative difference in predicted actinide
 concentrations between OpenMC and Serpent with probability tables turned on. For
 both the full and CASL depletion chains, the relative differences are all within
-0.2\%. While this may seem close, the observed difference in $^{238}$U and
+1\%. While this may seem close, the observed difference in $^{238}$U and
 $^{239}$Pu concentrations merits special mention. In this model, the fuel
 material is at \SI{807}{\kelvin}, but the endf71x library contains cross
 sections processed at \SI{600}{\kelvin} and \SI{900}{\kelvin}. Thus, Serpent
@@ -1191,7 +1203,10 @@ ends up using probability tables at \SI{600}{\kelvin} rather than
 consequently less production of $^{239}$Pu (hence a lower $k_\text{eff}$ than
 OpenMC with increasing burnup). Although OpenMC also does not have access to
 probability tables at the exact fuel temperature, it statistically interpolates
-between the probability tables at \SI{600}{\kelvin} and \SI{900}{\kelvin}.
+between the probability tables at \SI{600}{\kelvin} and \SI{900}{\kelvin}. Also
+note that $^{239}$U and $^{239}$Np, which are also produced as a result of
+neutron capture in $^{238}$U, have a higher relative difference because of their
+short half-lives and correspondingly small concentrations.
 \begin{figure}[H]
   \centering
   \begin{subfigure}[t]{0.45\textwidth}
@@ -1214,7 +1229,7 @@ between the probability tables at \SI{600}{\kelvin} and \SI{900}{\kelvin}.
 When probability tables are turned off, close agreement is observed between
 the predicted actinide concentrations in OpenMC and Serpent, as shown in
 \cref{fig:sfr-actinides-nop}. In this case, the actinide concentrations agree to
-within 0.01\% at all times during depletion for both the full and CASL depletion
+within 0.04\% at all times during depletion for both the full and CASL depletion
 chains.
 \begin{figure}[H]
   \centering
@@ -1360,13 +1375,13 @@ wider variety of transmutation reactions would need to be accounted for, and the
 ability to handle transmutation from a fixed, pulsed neutron source would be
 required.
 
-While the focus in this work has primarily been on correctness and accuracy, the
-performance of a coupled transport--depletion simulation is also an important
-consideration that directly impacts usability. The need to determine reaction
-rates for hundreds of nuclides leads to a significant performance degredation
-during a transport simulation. Research on methods to reduce the computational
-expense of obtaining transmutation reaction rates~\citep{salcedoperez2019mc}
-show promise but have yet to be incorporated in a release of OpenMC.
+While the focus in this work has primarily been on correctness, the performance
+of a coupled transport--depletion simulation is also an important consideration
+that directly impacts usability. The need to determine reaction rates for
+hundreds of nuclides leads to a significant performance degredation during a
+transport simulation. Research on methods to reduce the computational expense of
+obtaining transmutation reaction rates~\citep{salcedoperez2019mc} show promise
+but have yet to be incorporated in a release of OpenMC.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{Acknowledgments}

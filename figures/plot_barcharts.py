@@ -47,7 +47,7 @@ day = 24*60*60
 colors = rcParams['axes.prop_cycle'].by_key()['color']
 
 actinides = [
-    'U234', 'U235', 'U236', 'U238',
+    'U234', 'U235', 'U236', 'U238', 'U239', 'Np239',
     'Pu238', 'Pu239', 'Pu240', 'Pu241', 'Pu242',
     'Am241', 'Am242', 'Am242_m1', 'Am243', 'Am244',
     'Cm242', 'Cm243', 'Cm244', 'Cm245', 'Cm246',
@@ -125,10 +125,10 @@ isotope_bar_plot(results_full_average, fuel, actinides, f'pwr_actinides_full.{ex
 isotope_bar_plot(results_reduced, fuel, actinides, f'pwr_actinides_reduced.{ext}')
 isotope_bar_plot(results_casl_average, fuel, actinides, f'pwr_actinides_casl.{ext}')
 
-isotope_bar_plot(results_sfr_full, fuel_sfr, actinides, f'sfr_actinides_full.{ext}')
-isotope_bar_plot(results_sfr_casl, fuel_sfr, actinides, f'sfr_actinides_casl.{ext}')
-isotope_bar_plot(results_sfr_full_nop, fuel_sfr_nop, actinides, f'sfr_actinides_full_nop.{ext}', 3)
-isotope_bar_plot(results_sfr_casl_nop, fuel_sfr_nop, actinides, f'sfr_actinides_casl_nop.{ext}', 4)
+isotope_bar_plot(results_sfr_full, fuel_sfr, actinides, f'sfr_actinides_full.{ext}', 1)
+isotope_bar_plot(results_sfr_casl, fuel_sfr, actinides, f'sfr_actinides_casl.{ext}', 1)
+isotope_bar_plot(results_sfr_full_nop, fuel_sfr_nop, actinides, f'sfr_actinides_full_nop.{ext}')
+isotope_bar_plot(results_sfr_casl_nop, fuel_sfr_nop, actinides, f'sfr_actinides_casl_nop.{ext}')
 
 kwargs = {'figsize': (6.4, 10.0)}
 isotope_bar_plot(results_full_thermal, fuel, fission_products, f'pwr_fp_full_thermal.{ext}', 0, **kwargs)
